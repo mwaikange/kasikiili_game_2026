@@ -38,6 +38,7 @@ The reconstructed APK source does contain the owner's identifying features:
 - `docs/` — original project documents.
 - `Recovery/LatestApkSource/` — ILSpy reconstruction of the latest APK's `Assembly-CSharp.dll` and `Scripts.dll`.
 - `Recovery/Kasikili-recovery-report.md` — detailed APK, signing, backend, and restoration findings.
+- `expo-preview/` — Expo SDK 54 preview rebuilt with the latest APK's recovered login, game, menu, leaderboard, and account artwork.
 
 ## Important separation
 
@@ -63,8 +64,8 @@ The historical signing certificate was recovered from the APK, but its private k
 
 ## Next restoration checkpoint
 
-1. Export the latest APK's Unity scene and serialized assets with an AssetRipper-compatible workflow.
-2. Diff the exported scene/prefabs against `Assets/Scenes/Game.unity`.
+1. Continue diffing the recovered latest-APK scene/prefabs against `Assets/Scenes/Game.unity`.
+2. Use `expo-preview/` to validate the recovered portrait UI and interaction flow in Expo Go.
 3. Merge the reconstructed 2.0 scripts into `Assets/` while preserving matching `.meta` GUIDs.
 4. Stub or disable backend calls and compile in Unity 2020.3.5f1.
 5. Repair missing serialized references and packages.
