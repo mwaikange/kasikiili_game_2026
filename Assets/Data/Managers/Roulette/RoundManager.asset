@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7f08a8a443840be996bd7dea303a7f2, type: 3}
+  m_Name: RoundManager
+  m_EditorClassIdentifier: 
+  wheelDelay: 2
+  wheelDuration: 8.5
+  probabilityDelay: 2
+  probabilityDuration: 1.3
+  probabilityJackpotDelay: 1.3
+  probabilityJackpotDuration: 2.5
+  moneyDelay: 2
+  moneyDuration: 6
+  roundResetDelay: 4
+  winNumber:
+    value: 1
+  probabilityNumber:
+    value: 25
+  probabilityPla:
+    value: 1389.3
+  probabilityAfa:
+    value: 0
+  probabilityTub:
+    value: 4631
+  probabilityLetter:
+    value: 

@@ -1,0 +1,229 @@
+float TUB = 100000;
+float AFA = TUB * 0.3f;
+float PLA = TUB * 0.7f;
+float availableToWin = PLA;
+
+//Function to select RWM based on PLA balance
+float SelectRWM(float PLA)
+{
+    float rwm = 0;
+    if (PLA >= 0 && PLA <= 999)
+    {
+        rwm = 10;
+    }
+    else if (PLA >= 1000 && PLA <= 5000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.65f)
+        rwm = 10;
+        else
+        rwm = 25;
+    }
+    else if (PLA >= 5001 && PLA <= 20000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.55f)
+        rwm = 10;
+        else if(r<=0.85f)
+        rwm = 25;
+        else
+        rwm = 50;
+    }
+    else if (PLA >= 20001 && PLA <= 50000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.5f)
+        rwm = 10;
+        else if(r<=0.75f)
+        rwm = 25;
+        else if(r<=0.85f)
+        rwm = 50;
+        else
+        rwm = 100;
+    }
+    else if (PLA >= 50001 && PLA <= 100000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.45f)
+        rwm = 10;
+        else if(r<=0.65f)
+        rwm = 25;
+        else if(r<=0.7f)
+        rwm = 50;
+        else if(r<=0.9f)
+        rwm = 100;
+        else
+        rwm = 1000;
+    }
+    else if (PLA >= 100001 && PLA <= 180000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.4f)
+        rwm = 10;
+        else if(r<=0.55f)
+        rwm = 25;
+        else if(r<=0.6f)
+        rwm = 50;
+        else if(r<=0.75f)
+        rwm = 100;
+        else if(r<=0.9f)
+        rwm = 1000;
+        else
+        rwm = 2000;
+    }
+    else if (PLA >= 180001)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.35f)
+        rwm = 10;
+        else if(r<=0.
+
+****(RWM for 180001 and above is not complete- please make sure)
+
+________________________________________________
+
+alternative format:
+
+float SelectRWM(float PLA)
+{
+    float rwm = 0;
+    int range = 0;
+    if (PLA >= 0 && PLA <= 999) range = 1;
+    else if (PLA >= 1000 && PLA <= 5000) range = 2;
+    else if (PLA >= 5001 && PLA <= 20000) range = 3;
+    else if (PLA >= 20001 && PLA <= 50000) range = 4;
+    else if (PLA >= 50001 && PLA <= 100000) range = 5;
+    else if (PLA >= 100001 && PLA <= 180000) range = 6;
+    else range = 7;
+    switch (range)
+    {
+        case 1:
+            rwm = 10;
+            break;
+        case 2:
+            float r = UnityEngine.Random.Range(0f,1f);
+            if(r<=0.65f)
+                rwm = 10;
+            else
+                rwm = 25;
+            break;
+        case 3:
+            r = UnityEngine.Random.Range(0f,1f);
+            if(r<=0.55f)
+                rwm = 10;
+            else if(r<=0.85f)
+                rwm = 25;
+            else
+                rwm = 50;
+            break;
+        case 4:
+            r = UnityEngine.Random.Range(0f,1f);
+            if(r<=0.5f)
+                rwm = 10;
+            else if(r<=0.75f)
+                rwm = 25;
+            else if(r<=0.85f)
+                rwm = 50;
+            else
+                rwm = 100;
+            break;
+        case 5:
+            r = UnityEngine.Random.Range(0f,1f);
+            if(r<=0.45f)
+                rwm = 10;
+            else if(r<=0.65f)
+                rwm = 25;
+            else if(r<=0.7f)
+                rwm = 50;
+            else if(r<=0.9f)
+                rwm = 100;
+            else
+                rwm = 1000;
+            break;
+        case 6:
+            r = UnityEngine.Random.Range(0f,1f);
+            if(r<=0.4f)
+                rwm = 10;
+            else if(r<=0.55f)
+                rwm = 25;
+            else if(r<=0.6f)
+                rwm = 50;
+            else if(r<
+
+****(case 7 - RWM for 180001 and above is not done- please make sure)
+****(case 6 -100001 -180000 RWM above is not complete- please make sure)
+
+_______
+
+alternatoive C# format
+
+float TUB = 100000;
+float AFA = TUB * 0.3f;
+float PLA = TUB * 0.7f;
+float availableToWin = PLA;
+
+//Function to select RWM based on PLA balance
+float SelectRWM(float PLA)
+{
+    float rwm = 0;
+    if (PLA >= 0 && PLA <= 999)
+    {
+        rwm = 10;
+    }
+    else if (PLA >= 1000 && PLA <= 5000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.65f)
+        rwm = 10;
+        else
+        rwm = 25;
+    }
+    else if (PLA >= 5001 && PLA <= 20000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.55f)
+        rwm = 10;
+        else if(r<=0.85f)
+        rwm = 25;
+        else
+        rwm = 50;
+    }
+    else if (PLA >= 20001 && PLA <= 50000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.5f)
+        rwm = 10;
+        else if(r<=0.75f)
+        rwm = 25;
+        else if(r<=0.85f)
+        rwm = 50;
+        else
+        rwm = 100;
+    }
+    else if (PLA >= 50001 && PLA <= 100000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.45f)
+        rwm = 10;
+        else if(r<=0.65f)
+        rwm = 25;
+        else if(r<=0.7f)
+        rwm = 50;
+        else if(r<=0.9f)
+        rwm = 100;
+        else
+        rwm = 1000;
+    }
+    else if (PLA >= 100001 && PLA <= 180000)
+    {
+        float r = UnityEngine.Random.Range(0f,1f);
+        if(r<=0.4f)
+        rwm = 10;
+        else if(r<=0.55f)
+        rwm = 25;
+        else if(r<=0.6f)
+        rwm = 50;
+        else if(r<=0.75f)
+
+****(case 7 - RWM for 180001 and above is not done- please make sure)
+****(case 6 -100001 -180000 RWM above is not complete- please make sure)

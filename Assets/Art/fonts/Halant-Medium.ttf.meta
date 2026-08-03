@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 1740ddbcec67a524fb5517490716755f
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Halant
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: d04c342f65affa04da4599f52dde40bc, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

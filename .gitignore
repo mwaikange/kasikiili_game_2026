@@ -1,0 +1,51 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Rr]ecordings/
+[Mm]emoryCaptures/
+
+# IDE and editor files
+.idea/
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Unity crash and profiler output
+sysinfo.txt
+*.stacktrace
+
+# Android build/signing secrets and outputs
+*.apk
+*.aab
+*.keystore
+*.jks
+*.key
+local.properties
+
+# Recovered tooling and downloaded archives
+work/
+tools/
+*.7z
+*.zip
+

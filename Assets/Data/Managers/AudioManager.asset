@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aa46108abbb46e585ff0d1bdae3ec3a, type: 3}
+  m_Name: AudioManager
+  m_EditorClassIdentifier: 
+  masterDefault: 0
+  masterVolume:
+    value: 0
+  masterMusic: {fileID: 11400000, guid: 9cb148949c9ac6a4a80605b560a31d0a, type: 2}
+  musicState:
+    value: 1
+  fxState:
+    value: 1

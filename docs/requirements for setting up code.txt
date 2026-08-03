@@ -1,0 +1,62 @@
+I am coding winning probabilities for a Roulette Game on Unity.
+
+players will add credits aka funds to thier individual accounts to spin the roulette for a chance to win, sum of all the players individual credits are added together to create a summary called Total User Balance aka "TUB"
+
+However the roulette game has 2 accounts to which credits/funds in the Total User Balance "TUB" is distributed.
+
+The admin fee account aka " AFA " and the player lottery account aka " PLA ", the distribution of these funds in TUB are setup so that 30% goes/reflects to AFA and 70% goes/reflecrs to PLA.
+
+and only the credits/funds amount in the PLA (the 70%) is available as winings to the players and is determined by RWM Probabilities, the rest is out of play and deposited to AFA
+
+If total amount in the TUB currently is 100 000 credits , how much will the AFA get and the PFA get?
+and how much is available to be won by players and to be distributed according to RWM Probabilities?
+
+after answering can you put that in code?
+------------------------------------------------------------------------------------------------------------------------
+
+
+Roulette has numbers 0 to 12
+on each of those numbers user can place between 1 to 10 credits max on each number
+players place a bet on a specific number on the roulette, these bets are valued in credits/funds.
+
+MAIN THING IS that There are random wining multipliers "RWM" of 10, 25, 50, 100, 1000 and 2000
+
+so depending on the how many credits have been placed on the winning bet the algorithm is is designed to choose at random a multiplier and reflect the amount of winnings won by the player
+example: winning bet has 8 credits and random winning multiplier chosen by algorithm is 1000, means that the player has won 8000 credits.
+
+as per previous explanations- ALL CREDITS WON by players are DEDUCTED from the PLA and then credited to the players account.
+to make sure that the code does not Payout more then what is in the PLA, we have devised the formula below.
+
+the formula indicates that the algorithm must first check and verify the amount in the PLA before selecting a "RWM" so that the winning amount does not exceed what is in the TUB, 
+furthemore it gives or divides the probablity of RWM being chosen by the Algorithm in percentages %
+
+Algorithm is designed so that winners are able to LOOSE a bet and WIN , please see example below of code setup:
+
+random wining multipliers "RWM" being (10) (25) (50) (100) (1000) and (2000)
+
+1.> if the balance of the Players Lottery Account (PLA) pot is
+  (a) is 0 - 999 /     (10) => 100%
+meaning if the balance of PLA is between 0 and 999 and below then the chosen RWM must be (10)=>  100% of the time.
+ (d) is 20001 - 50000/(10) => 50% (25)=> 25% (50) => 10% (100) =>15%
+meaning if the balance of PLA is between 0 and 999 and below then the chosen RWM must be (10)=>  50% of the time,(25)=>  25% of the time (50)=>  10% of the time (100) =>15% of the time.
+
+
+---------------------------------------------------------
+
+all percentages must add up to 100%
+rows a to d are referred to as RWM Probabilites and which RWM probablity is currently active depends on the balance of the PLA.
+
+so currently RWM Probabilities are as follows:
+
+1.> if the balance of the Players Lottery Account (PLA) pot is
+(a) is 0 - 999 /     (10) => 100%
+ (b) is 1000 - 5000/  (10) => 65%  (25) => 35% 
+ (c) is 5001 - 20000/ (10) => 55%  (25) => 30% (50) => 15%
+ (d) is 20001 - 50000/(10) => 50%   (25)=> 25% (50) => 10% (100) =>15%
+ (e) is 50001 - 100000/(10)=> 45%   (25)=> 20% (50) => 5% (100) =>20% (1000) =>10%
+ (f) is 100001 - 180000/(10) =>40%   (25)=> 15% (50) => 5 % (100) =>15% (1000) =>15% (2000) => 10%
+ (g) is 180001+  /      (10) =>35%   (25)=> 10% (50) => 10 % (100) =>15% (1000) =>15% (2000) => 15%
+ 
+
+can you analyze all this information and add the RWM PROBABILITIES above to the code previuosly provided?
+
