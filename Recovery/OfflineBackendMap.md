@@ -6,8 +6,8 @@
 
 **Current recovery branch:** `recovery/kasikili-v2`
 
-**Current audited APK:** `Kasikili-V2.0.1-OFFLINE-GAMEPLAY.apk`
-**APK SHA-256:** `2B72EDB91E49A383E9954696A6380020057AD4B828E2DB81D51F4D34AD111406`
+**Current audited APK:** `Kasikili-V2.0.1-WIN-FIX.apk`
+**APK SHA-256:** `B81B8C7D172C9285918BEEC708E1C56ED2A9434CEFFECD187A46AD10AC72E66B`
 
 This is the canonical register of every server dependency bypassed while reviving
 the original Kasikili Unity APK. Update it whenever a bypass is added, changed or
@@ -140,8 +140,10 @@ replaced by the new backend.
   `autoJackpot` limit. On a winning number, `rwm` controlled the payout and drove
   probability/jackpot lights and sounds.
 - **Why it existed:** To control payout exposure and jackpot behavior centrally.
-- **Current bypass:** Local response uses label `OFFLINE`, multiplier 10 and a high
-  N$1,000,000 test limit.
+- **Current bypass:** The winning branch assigns label `OFFLINE` and multiplier 10
+  directly, without entering the retired API manager/callback boundary. It then
+  runs the original probability, jackpot, win and reset event sequence. A high
+  N$1,000,000 test limit remains configured.
 - **Current status:** Bypassed; local fixture.
 - **Restore with backend:** The server must create and sign/record the complete
   round result and multiplier before settlement. The client should only animate it.
@@ -363,3 +365,4 @@ Do not remove a bypass from this register until all applicable checks pass:
 |---|---|---|
 | 2026-08-04 | 1.0 | Created initial backend dependency map. |
 | 2026-08-04 | 2.0 | Expanded into explicit BYP-001–BYP-019 register, documented original intent, risks, restoration requirements, gameplay compatibility changes and production gates. |
+| 2026-08-04 | 2.1 | Removed the final probability callback boundary from the winning branch so local multiplier, payout, audio/visual events and reset execute as one sequence. |

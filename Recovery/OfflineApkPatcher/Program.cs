@@ -44,6 +44,7 @@ PatchLogoutButton(module);
 PatchGuardedTableInput(module);
 PatchImmediateCancel(module);
 PatchLocalRoundSettlement(module);
+PatchLocalWinningBranch(module);
 PatchLocalCashout(module);
 PatchProbability(module);
 PatchNoOp(module, "APIManager", "CallFcmAPI");
@@ -452,6 +453,88 @@ static void PatchLocalRoundSettlement(ModuleDefinition module)
         && i.Operand is MethodReference called && called.Name == "ResetRound");
     delegateTarget.Operand = resetSequence;
     Console.WriteLine("Patched local win/loss settlement and reset to preserve the updated wallet.");
+}
+
+static void PatchLocalWinningBranch(ModuleDefinition module)
+{
+    var type = FindType(module, "Commands.PaymentRoundCmd");
+    var method = type.Methods.Single(m => m.Name == "Execute");
+    var tableManager = FindType(module, "ViewModel.TableManager");
+    var cashManager = FindType(module, "ViewModel.CashManager");
+    var roundManager = FindType(module, "ViewModel.RoundManager");
+    var getInt = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "get_Value" && m.DeclaringType.FullName.Contains("System.Int32", StringComparison.Ordinal));
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    method.Body.InitLocals = true;
+    var credits = new VariableDefinition(module.TypeSystem.Int32);
+    var payment = new VariableDefinition(module.TypeSystem.Int32);
+    method.Body.Variables.Add(credits);
+    method.Body.Variables.Add(payment);
+    var lose = il.Create(OpCodes.Nop);
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_tableManager")));
+    il.Append(il.Create(OpCodes.Ldfld, tableManager.Fields.Single(f => f.Name == "cashManager")));
+    il.Append(il.Create(OpCodes.Ldfld, cashManager.Fields.Single(f => f.Name == "currentCredit")));
+    il.Append(il.Create(OpCodes.Callvirt, getInt));
+    il.Append(il.Create(OpCodes.Stloc, credits));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_tableManager")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_roundManager")));
+    il.Append(il.Create(OpCodes.Ldfld, roundManager.Fields.Single(f => f.Name == "winNumber")));
+    il.Append(il.Create(OpCodes.Callvirt, getInt));
+    il.Append(il.Create(OpCodes.Callvirt, tableManager.Methods.Single(m => m.Name == "CheckIfPlayerWin")));
+    il.Append(il.Create(OpCodes.Brfalse, lose));
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "GetProbabilityNum")));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "WinRound")));
+    il.Append(il.Create(OpCodes.Stloc, payment));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldloc, credits));
+    il.Append(il.Create(OpCodes.Ldloc, payment));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_tableManager")));
+    il.Append(il.Create(OpCodes.Ldfld, tableManager.Fields.Single(f => f.Name == "cashManager")));
+    il.Append(il.Create(OpCodes.Ldfld, cashManager.Fields.Single(f => f.Name == "currentBet")));
+    il.Append(il.Create(OpCodes.Callvirt, getInt));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "PostBalance")));
+    il.Append(il.Create(OpCodes.Ret));
+
+    il.Append(lose);
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "LostRound")));
+    il.Append(il.Create(OpCodes.Stloc, payment));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldloc, credits));
+    il.Append(il.Create(OpCodes.Ldc_I4_0));
+    il.Append(il.Create(OpCodes.Ldloc, payment));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "PostBalance")));
+    il.Append(il.Create(OpCodes.Ret));
+
+    var probability = type.Methods.Single(m => m.Name == "GetProbabilityNum");
+    var setInt = probability.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "set_Value" && m.DeclaringType.FullName.Contains("System.Int32", StringComparison.Ordinal));
+    var setString = probability.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "set_Value" && m.DeclaringType.FullName.Contains("System.String", StringComparison.Ordinal));
+    var probabilityIl = probability.Body.GetILProcessor();
+    ResetBody(probability);
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldarg_0));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_roundManager")));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldfld, roundManager.Fields.Single(f => f.Name == "probabilityNumber")));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldc_I4_S, (sbyte)10));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Callvirt, setInt));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldarg_0));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_roundManager")));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldfld, roundManager.Fields.Single(f => f.Name == "probabilityLetter")));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldstr, "OFFLINE"));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Callvirt, setString));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ldc_I4_S, (sbyte)10));
+    probabilityIl.Append(probabilityIl.Create(OpCodes.Ret));
+    Console.WriteLine("Patched winning branch to run local multiplier, payout, events and reset without API callbacks.");
 }
 
 static void PatchLocalCashout(ModuleDefinition module)
