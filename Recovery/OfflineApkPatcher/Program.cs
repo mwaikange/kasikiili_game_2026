@@ -39,6 +39,7 @@ PatchRoundLimit(module);
 PatchRouletteStartupActive(module);
 PatchOfflineConnection(module);
 PatchOfflineLogin(module);
+PatchLoginButton(module);
 PatchOpenMenu(module);
 PatchProbability(module);
 PatchNoOp(module, "APIManager", "CallFcmAPI");
@@ -221,7 +222,6 @@ static void PatchOfflineLogin(ModuleDefinition module)
     var execute = type.Methods.Single(m => m.Name == "Execute");
     var managerField = type.Fields.Single(f => f.Name == "_gameManager");
     var gameManager = FindType(module, "ViewModel.GameManager");
-    var loaderManager = FindType(module, "ViewModel.LoaderManager");
     var parse = AllTypes(module)
         .Where(t => t.FullName.StartsWith("Commands.PostUserLoginCmd/", StringComparison.Ordinal))
         .SelectMany(t => t.Methods)
@@ -251,23 +251,53 @@ static void PatchOfflineLogin(ModuleDefinition module)
 
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
-    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "loaderManager")));
-    il.Append(il.Create(OpCodes.Ldc_I4_0));
-    il.Append(il.Create(OpCodes.Stfld, loaderManager.Fields.Single(f => f.Name == "loadingQueue")));
+    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnLoginSuccess")));
+    il.Append(il.Create(OpCodes.Ldc_I4_1));
+    il.Append(il.Create(OpCodes.Callvirt, onNext));
+    il.Append(il.Create(OpCodes.Ret));
+    Console.WriteLine("Patched login to complete synchronously without a loading wait.");
+}
+
+static void PatchLoginButton(ModuleDefinition module)
+{
+    var type = FindType(module, "Components.LoginButtonInput");
+    var method = type.Methods.Single(m => m.Name == "OnClick");
+    var gameManager = FindType(module, "ViewModel.GameManager");
+    var parse = AllTypes(module)
+        .Where(t => t.FullName.StartsWith("Commands.PostUserLoginCmd/", StringComparison.Ordinal))
+        .SelectMany(t => t.Methods)
+        .Where(m => m.HasBody)
+        .SelectMany(m => m.Body.Instructions)
+        .Select(i => i.Operand)
+        .OfType<MethodReference>()
+        .First(m => m.DeclaringType.FullName == "SimpleJSON.JSON" && m.Name == "Parse");
+    var onNext = FindMethod(module, "Commands.PostUserLoginCmd", "Execute")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "OnNext");
+    var managerField = type.Fields.Single(f => f.Name == "gameManager");
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
-    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "loaderManager")));
-    il.Append(il.Create(OpCodes.Ldfld, loaderManager.Fields.Single(f => f.Name == "OnLoading")));
-    il.Append(il.Create(OpCodes.Ldc_I4_0));
-    il.Append(il.Create(OpCodes.Callvirt, onNext));
-
+    il.Append(il.Create(OpCodes.Ldc_I4_1));
+    il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "userId")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, managerField));
+    il.Append(il.Create(OpCodes.Ldstr, "offline"));
+    il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "userAccessToken")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, managerField));
+    il.Append(il.Create(OpCodes.Ldstr, "{\"user_id\":1,\"accesstoken\":\"offline\",\"referral_link\":\"offline\",\"mobile_number\":\"0810000000\",\"region\":\"KHOMAS\"}"));
+    il.Append(il.Create(OpCodes.Call, parse));
+    il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "UserData")));
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
     il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnLoginSuccess")));
     il.Append(il.Create(OpCodes.Ldc_I4_1));
     il.Append(il.Create(OpCodes.Callvirt, onNext));
     il.Append(il.Create(OpCodes.Ret));
-    Console.WriteLine("Patched login to complete synchronously without a loading wait.");
+    Console.WriteLine("Patched SIGN IN button to trigger local login directly.");
 }
 
 static void PatchOpenMenu(ModuleDefinition module)
