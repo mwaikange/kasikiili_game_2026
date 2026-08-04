@@ -1,0 +1,114 @@
+.loginWrapper {
+  background: linear-gradient(180deg, #2b1866 0%, #1c0848 100%);
+  min-height: 100vh;
+  padding-top: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.logIn {
+  max-width: 1166px;
+  width: 100%;
+  background: url(../../../assets/image/loginbg.svg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+
+  border-radius: 30px;
+  position: relative;
+  z-index: 1;
+  padding: 50px;
+}
+.logIn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(54, 37, 106, 0.6);
+  z-index: -1;
+  border-radius: 30px;
+}
+.title {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 150%;
+  color: #ffffff;
+}
+.text {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 150%;
+  color: #ffffff;
+  padding: 12px 0;
+}
+.form {
+  max-width: 300px;
+}
+.inputContainer {
+  width: 100%;
+}
+.buttonContainer {
+  padding: 40px 0;
+  padding-bottom: 30px;
+}
+.button {
+  background: linear-gradient(180deg, #1c97a6 4.69%, #392e2d 80.21%);
+
+  border-radius: 100px;
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 110%;
+  color: #ffffff;
+  border: none;
+  outline: none;
+  padding: 10px 15px;
+  width: 140px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  cursor: pointer;
+}
+.button:active {
+  box-shadow: 0px 0px 25px #7f55da;
+}
+.forgotPassword {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 150%;
+  color: #ffffff;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+}
+.link {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 150%;
+  color: #ffffff;
+  text-align: center;
+  display: block;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  padding-left: 5px;
+}
+.inputWrapper {
+  padding: 5px 0;
+}

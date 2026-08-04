@@ -1,0 +1,56 @@
+.sidebar {
+  width: 240px;
+  background: #ffffff;
+  position: fixed;
+  top: 0;
+  padding-top: 150px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 30px;
+  background: linear-gradient(180deg, #ffff 95.83%, #1c0848 98.44%);
+}
+
+.navItems {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 150%;
+  color: #392e2d;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 15px;
+  border-bottom: 1px solid #dee1e6;
+}
+.navItems:first-child {
+  border-top: 1px solid #dee1e6;
+}
+.home {
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.activeNavItems {
+  background: #dee1e6;
+  font-weight: 700;
+}
+
+.icon {
+  width: 20px;
+}
+.version {
+  font-family: "Quicksand";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 240%;
+
+  text-align: center;
+  letter-spacing: 0.44px;
+
+  color: #000000;
+  padding: 10px 10px;
+}

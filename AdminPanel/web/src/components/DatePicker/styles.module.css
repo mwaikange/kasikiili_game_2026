@@ -1,0 +1,13 @@
+.myInput {
+  padding-top: 8px;
+}
+
+.label {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 150%;
+  color: #392e2d;
+  padding-bottom: 5px;
+}

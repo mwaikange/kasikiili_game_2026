@@ -1,0 +1,47 @@
+.myTable {
+  padding-top: 40px;
+}
+.headingContainer {
+  border-top: 1px solid #5f6368;
+  border-bottom: 1px solid #5f6368;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr) 25px;
+  gap: 25px;
+
+  overflow-y: scroll;
+}
+.tableContainer {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr) 25px;
+  gap: 25px;
+}
+
+.table {
+  height: 250px;
+  overflow-y: scroll;
+}
+
+.tableDataAndTable {
+  display: flex;
+}
+.viewButton {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 120%;
+  text-align: center;
+  color: #ffffff;
+  background: #1ea52b;
+
+  border-radius: 5px;
+  text-decoration: none;
+
+  margin: 12px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.viewButton:active {
+  box-shadow: 0px 0px 25px #1ea52b;
+}

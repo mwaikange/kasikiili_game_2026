@@ -1,0 +1,26 @@
+{
+  "name": "kasikili-admin-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "file-saver": "2.0.5",
+    "react": "18.2.0",
+    "react-datepicker": "4.10.0",
+    "react-dom": "18.2.0",
+    "react-icons": "4.7.1",
+    "react-router-dom": "6.8.1",
+    "react-toastify": "9.1.1",
+    "sheetjs-style": "0.15.8",
+    "styled-components": "5.3.6",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "vite": "5.4.14"
+  }
+}

@@ -50,3 +50,15 @@ work/
 tools/
 *.7z
 *.zip
+
+# JavaScript dependencies and build output
+node_modules/
+.env
+.env.*
+!.env.example
+AdminPanel/web/dist/
+AdminPanel/frontend/
+AdminPanel/backend/logs/*
+!AdminPanel/backend/logs/.gitkeep
+AdminPanel/backend/errorlogs/*
+!AdminPanel/backend/errorlogs/.gitkeep

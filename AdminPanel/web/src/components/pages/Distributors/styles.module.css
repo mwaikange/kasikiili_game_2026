@@ -1,0 +1,108 @@
+.searchDatesTotal {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 50px;
+  align-items: flex-start;
+}
+.search {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.contentBox {
+  padding-bottom: 60px;
+  width: 100%;
+}
+.totalAmount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 5px 0;
+}
+.searchButton {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 110%;
+  text-align: center;
+  color: #ffffff;
+  background: #1ea52b;
+
+  border-radius: 10px;
+
+  padding: 12px 30px;
+
+  min-width: 160px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+.searchButton:active {
+  box-shadow: 0px 0px 25px #1ea52b;
+}
+.downLoadExcelButton {
+  min-width: 20px;
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 110%;
+  text-align: center;
+  color: #ffffff;
+  background: #37266b;
+
+  border-radius: 10px;
+  padding: 12px 30px;
+  margin-top: 40px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+.downLoadExcelButton:active {
+  box-shadow: 0px 0px 25px #7f55da;
+}
+.updateBox {
+  background: #d9d9d9;
+  border-radius: 5px;
+  padding: 15px 20px;
+}
+.buttonContainer {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 30px 0;
+  padding-bottom: 15px;
+}
+.upDateButton {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
+  text-align: center;
+  color: #ffffff;
+  padding: 12px 10px;
+  background: #1ea52b;
+  box-shadow: 0px 0px 25px #7f55da;
+  border: none;
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+}
+.details {
+  padding-top: 5px;
+}
+
+@media only screen and (max-width: 1280px) {
+  .searchDatesTotal {
+    gap: 30px;
+  }
+  .updateBox {
+    padding: 15px 10px;
+  }
+  .buttonContainer {
+    gap: 8px;
+  }
+}

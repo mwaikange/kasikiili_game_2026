@@ -1,0 +1,63 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 30px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #5f6368;
+}
+.keyValue {
+  font-family: "Quicksand";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 150%;
+
+  letter-spacing: 0.44px;
+
+  color: #000000;
+  display: flex;
+  align-items: center;
+}
+.value {
+  color: #c85e22;
+  display: block;
+  padding-left: 20px;
+}
+.title {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 150%;
+  text-decoration-line: underline;
+  color: #392e2d;
+  padding: 6px 0;
+}
+.generateAmount {
+}
+.availableContainer {
+  border-bottom: 1px solid #000000;
+  padding-top: 20px;
+  padding-bottom: 25px;
+  margin-bottom: 10px;
+}
+.inputContainer {
+  padding-top: 15px;
+}
+.buttonContainer {
+  padding-bottom: 25px;
+  border-bottom: 1px solid #000000;
+}
+
+@media only screen and (max-width: 1350px) {
+  .title {
+    font-size: 17px;
+  }
+}

@@ -1,0 +1,57 @@
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+  width: 100%;
+}
+.label {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 150%;
+  color: #392e2d;
+  display: block;
+  padding-bottom: 5px;
+  text-transform: capitalize;
+}
+
+.input {
+  background: #ffffff;
+  border-radius: 5px;
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 12px;
+  outline: none;
+  border: none;
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 150%;
+}
+::placeholder {
+  opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder {
+  color: red;
+}
+
+::-ms-input-placeholder {
+  color: red;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+label[for="myDate"] {
+  position: relative;
+}
+
+label[for="myDate"] i {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.6em;
+}

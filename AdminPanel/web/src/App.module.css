@@ -1,0 +1,26 @@
+.pageWrapper {
+  width: 100%;
+}
+.rightSideContainer {
+  padding: 50px;
+  padding-left: 295px;
+}
+/* .overlay {
+  position: fixed;
+  bottom: 0;
+  z-index: 50;
+  top: 0;
+  max-width: 1440px;
+  width: 100%;
+  left: 0;
+  height: 50px;
+  background: #1c0848;
+  margin: 0 auto;
+  transform: translateX(-50%);
+} */
+@media only screen and (max-width: 1399px) {
+  .rightSideContainer {
+    padding: 50px 20px;
+    padding-left: 265px;
+  }
+}

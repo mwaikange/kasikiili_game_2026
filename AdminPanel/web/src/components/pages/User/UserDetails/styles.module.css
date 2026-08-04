@@ -1,0 +1,73 @@
+.distributorWrapper {
+  position: relative;
+}
+.icon {
+  position: absolute;
+  left: 0;
+  top: -38px;
+  font-size: 30px;
+  cursor: pointer;
+}
+.distributorInfo {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #5f6368;
+  border-bottom: 1px solid #5f6368;
+  padding: 40px 0;
+  position: relative;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+}
+.headingAndTagline {
+  display: grid;
+  grid-template-columns: 0.7fr auto 1fr;
+}
+.clone {
+  width: 60px;
+  text-align: center;
+  display: block;
+}
+.tagline {
+  text-align: right;
+}
+.historyTitle {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 115%;
+  color: #5f6368;
+  padding: 15px 0;
+}
+
+.tableContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.3fr 0.8fr;
+}
+.tableContainer2 {
+  max-height: 230px;
+  overflow-y: scroll;
+}
+.details {
+  display: flex;
+  justify-content: flex-end;
+  overflow-y: scroll;
+}
+.title {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 120%;
+
+  color: #5f6368;
+  border-bottom: 1px solid #5f6368;
+  padding: 8px 0;
+}
+
+.value {
+  border: none;
+}
