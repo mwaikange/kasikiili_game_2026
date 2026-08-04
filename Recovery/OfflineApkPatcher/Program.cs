@@ -271,9 +271,15 @@ static void PatchLoginButton(ModuleDefinition module)
         .Select(i => i.Operand)
         .OfType<MethodReference>()
         .First(m => m.DeclaringType.FullName == "SimpleJSON.JSON" && m.Name == "Parse");
-    var onNext = FindMethod(module, "Commands.PostUserLoginCmd", "Execute")
-        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
-        .First(m => m.Name == "OnNext");
+    var getGameScene = gameManager.Methods.Single(m => m.Name == "GetGameScene");
+    var gameScene = FindType(module, "ViewModel.GameScene");
+    var loadScene = FindType(module, "ViewModel.LoaderManager").Methods
+        .Where(m => m.HasBody)
+        .SelectMany(m => m.Body.Instructions)
+        .Select(i => i.Operand)
+        .OfType<MethodReference>()
+        .First(m => m.DeclaringType.FullName == "UnityEngine.SceneManagement.SceneManager"
+            && m.Name == "LoadScene" && m.Parameters.Count == 1);
     var managerField = type.Fields.Single(f => f.Name == "gameManager");
     var il = method.Body.GetILProcessor();
     ResetBody(method);
@@ -293,11 +299,12 @@ static void PatchLoginButton(ModuleDefinition module)
     il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "UserData")));
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
-    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnLoginSuccess")));
-    il.Append(il.Create(OpCodes.Ldc_I4_1));
-    il.Append(il.Create(OpCodes.Callvirt, onNext));
+    il.Append(il.Create(OpCodes.Ldc_I4_3));
+    il.Append(il.Create(OpCodes.Callvirt, getGameScene));
+    il.Append(il.Create(OpCodes.Ldfld, gameScene.Fields.Single(f => f.Name == "index")));
+    il.Append(il.Create(OpCodes.Call, loadScene));
     il.Append(il.Create(OpCodes.Ret));
-    Console.WriteLine("Patched SIGN IN button to trigger local login directly.");
+    Console.WriteLine("Patched SIGN IN button to load the Unity Game scene directly.");
 }
 
 static void PatchOpenMenu(ModuleDefinition module)

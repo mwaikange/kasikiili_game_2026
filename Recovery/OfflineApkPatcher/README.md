@@ -8,8 +8,8 @@ The patch:
 - preserves the APK's original login, signup, forgot-password, game and menu scenes;
 - accepts any non-empty mobile number and password synchronously offline, without
   opening or waiting on the legacy loading/server chain;
-- wires the existing SIGN IN button directly to the local Unity login-success
-  event instead of the retired backend command factory;
+- wires the existing SIGN IN button directly to Unity's configured Game scene,
+  bypassing validation, authentication, loaders, callbacks and event listeners;
 - replaces the dead authentication, OTP and password-reset HTTP responses locally;
 - starts the wallet at N$500 and prevents the old credit limit from locking play;
 - keeps the table active after Unity's roulette reset;
