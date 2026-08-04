@@ -41,7 +41,7 @@ const leaders = [
 ] as const;
 
 function AppStatusBar() {
-  return <StatusBar hidden />;
+  return <StatusBar hidden={false} style="light" backgroundColor="#0f393b" translucent={false} />;
 }
 
 function BackIcon({ onPress, light = false }: { onPress: () => void; light?: boolean }) {
@@ -198,18 +198,40 @@ function WheelAssembly({ rotation, win, credit }: { rotation: Animated.AnimatedI
   );
 }
 
-function BetNumber({ number }: { number: number }) {
+function BetNumber({
+  number,
+  selectedNumber,
+  selectedStake,
+  onSelect,
+}: {
+  number: number;
+  selectedNumber: number | null;
+  selectedStake: number;
+  onSelect: (number: number, stake: number) => void;
+}) {
   const red = redNumbers.has(number);
+  const numberSelected = selectedNumber === number;
   return (
     <View style={styles.numberTile}>
-      <View style={[styles.numberCircle, number === 0 ? styles.greenNumber : red ? styles.redNumber : styles.blackNumber]}>
-        <Text style={styles.numberLabel}>{number}</Text>
-      </View>
+      <Pressable
+        accessibilityLabel={`Select number ${number}`}
+        onPress={() => onSelect(number, selectedStake || 1)}
+        style={[styles.numberCircle, number === 0 ? styles.greenNumber : red ? styles.redNumber : styles.blackNumber, numberSelected && styles.selectedNumberCircle]}
+      >
+        <Text style={[styles.numberLabel, number >= 10 && styles.twoDigitNumber]}>{number}</Text>
+      </Pressable>
       {['1', '2', '3', '4'].map((value, index) => (
         <Pressable
           accessibilityLabel={`Bet ${value} tokens on ${number}`}
           key={value}
-          style={({ pressed }) => [styles.betSquare, index % 2 === 0 ? styles.betLeft : styles.betRight, index < 2 ? styles.betTop : styles.betBottom, pressed && styles.betPressed]}
+          onPress={() => onSelect(number, Number(value))}
+          style={({ pressed }) => [
+            styles.betSquare,
+            index % 2 === 0 ? styles.betLeft : styles.betRight,
+            index < 2 ? styles.betTop : styles.betBottom,
+            numberSelected && selectedStake === Number(value) && styles.selectedBet,
+            pressed && styles.betPressed,
+          ]}
         >
           <Text style={styles.betSquareText}>{value}</Text>
         </Pressable>
@@ -228,7 +250,7 @@ function GameMenu({ close, navigate }: { close: () => void; navigate: (screen: S
         <Pressable onPress={() => navigate('notifications')}><Text style={styles.menuItem}>NOTIFICATIONS</Text></Pressable>
         <Pressable onPress={() => navigate('login')}><Text style={styles.menuItem}>SIGN OUT</Text></Pressable>
       </View>
-      <View style={styles.menuClose}><Hamburger onPress={close} /></View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Close menu" onPress={close} style={styles.menuDismissArea} />
     </View>
   );
 }
@@ -240,10 +262,13 @@ function GameScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   const [menu, setMenu] = useState(false);
   const [credit, setCredit] = useState(0);
   const [win, setWin] = useState(0);
+  const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [selectedStake, setSelectedStake] = useState(1);
   const rotation = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '2160deg'] });
   const start = () => {
+    if (selectedNumber === null) return;
     spin.setValue(0);
-    setCredit((value) => value + 1);
+    setCredit((value) => value + selectedStake);
     setWin(0);
     Animated.timing(spin, { toValue: 1, duration: 2600, useNativeDriver: true }).start(() => setWin(Math.random() > 0.7 ? 10 : 0));
   };
@@ -251,21 +276,21 @@ function GameScreen({ navigate }: { navigate: (screen: Screen) => void }) {
     <SafeAreaView style={styles.gameRoot}>
       <AppStatusBar />
       <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.gamePage}>
-        <View style={{ width: 375 * scale, height: 765 * scale }}>
-          <View style={{ width: 375, height: 765, transform: [{ scale }], transformOrigin: 'top left' } as never}>
+        <View style={{ width: 375 * scale, height: 783 * scale }}>
+          <View style={{ width: 375, height: 783, paddingTop: 20, transform: [{ scale }], transformOrigin: 'top left' } as never}>
             <WheelAssembly rotation={rotation} win={win} credit={credit} />
             <Text style={styles.gameHeading}>KASIKILI BERGMANN ROULETTE</Text>
             <View style={styles.gameControls}>
               <View style={styles.controlMenu}><Hamburger onPress={() => setMenu(true)} /></View>
               <View style={styles.multiplierRow}>{multipliers.map((value) => <Text key={value} style={styles.multiplier}>{value}</Text>)}</View>
               <View style={styles.actionRow}>
-                <Pressable style={styles.cancelButton} onPress={() => setWin(0)}><Text style={styles.gameButtonText}>CANCEL</Text></Pressable>
+                <Pressable style={styles.cancelButton} onPress={() => { setWin(0); setSelectedNumber(null); setSelectedStake(1); }}><Text style={styles.gameButtonText}>CANCEL</Text></Pressable>
                 <Pressable style={styles.startButton} onPress={start}><Text style={[styles.gameButtonText, styles.startText]}>START</Text></Pressable>
               </View>
             </View>
             <View style={styles.betTable}>
-              <View style={styles.tableRow}><View style={styles.numberTile} /><BetNumber number={0} /><View style={styles.numberTile} /></View>
-              {numberRows.map((row) => <View key={row.join('-')} style={styles.tableRow}>{row.map((number) => <BetNumber key={number} number={number} />)}</View>)}
+              <View style={styles.tableRow}><View style={styles.numberTile} /><BetNumber number={0} selectedNumber={selectedNumber} selectedStake={selectedStake} onSelect={(number, stake) => { setSelectedNumber(number); setSelectedStake(stake); }} /><View style={styles.numberTile} /></View>
+              {numberRows.map((row) => <View key={row.join('-')} style={styles.tableRow}>{row.map((number) => <BetNumber key={number} number={number} selectedNumber={selectedNumber} selectedStake={selectedStake} onSelect={(nextNumber, stake) => { setSelectedNumber(nextNumber); setSelectedStake(stake); }} />)}</View>)}
             </View>
           </View>
         </View>
@@ -408,14 +433,14 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   authRoot: { flex: 1, backgroundColor: '#fff' },
   whiteRoot: { flex: 1, backgroundColor: '#fff' },
-  loginContent: { minHeight: 780, alignItems: 'center', paddingHorizontal: 21, paddingTop: 23, paddingBottom: 18 },
-  signupContent: { minHeight: 780, alignItems: 'center', paddingHorizontal: 21, paddingTop: 23, paddingBottom: 18 },
+  loginContent: { minHeight: 780, alignItems: 'center', paddingHorizontal: 21, paddingTop: 42, paddingBottom: 18 },
+  signupContent: { minHeight: 780, alignItems: 'center', paddingHorizontal: 21, paddingTop: 42, paddingBottom: 18 },
   authTitle: { fontSize: 14, fontWeight: '900', color: '#070707', marginBottom: 23 },
   authRule: { alignSelf: 'stretch', height: 1, backgroundColor: '#777', marginBottom: 10 },
   authWheel: { width: 184, height: 184, marginTop: 38 },
   authWheelCompact: { width: 176, height: 176, marginTop: 2 },
   loginFields: { width: '100%', gap: 24, marginTop: 62 },
-  signupFields: { width: '100%', gap: 18, marginTop: 1 },
+  signupFields: { width: '100%', gap: 18, marginTop: 11 },
   authField: { width: '100%', height: 59, borderRadius: 20, backgroundColor: '#9bd3a3', color: '#fff', textAlign: 'center', fontSize: 14, paddingHorizontal: 18 },
   rememberRow: { height: 39, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   rememberText: { fontSize: 7, fontWeight: '800', color: '#111' },
@@ -445,7 +470,7 @@ const styles = StyleSheet.create({
   digitDisplay: { width: 69, height: 25, borderWidth: 3, borderColor: '#ff1720', backgroundColor: '#b21419', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly' },
   digit: { color: '#fff', fontSize: 17, fontWeight: '900', fontFamily: 'monospace' },
   gameHeading: { color: '#fff', fontFamily: 'serif', textDecorationLine: 'underline', fontSize: 16, textAlign: 'center', height: 25 },
-  gameControls: { height: 78, position: 'relative' },
+  gameControls: { height: 74, position: 'relative' },
   controlMenu: { position: 'absolute', left: 6, top: -1 },
   hamburger: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ced900', alignItems: 'center', justifyContent: 'center', gap: 3 },
   hamburgerLine: { width: 22, height: 3, borderRadius: 2, backgroundColor: '#183d27' },
@@ -459,16 +484,19 @@ const styles = StyleSheet.create({
   betTable: { width: 355, height: 482, borderWidth: 1, borderColor: '#507a67', alignSelf: 'center' },
   tableRow: { flexDirection: 'row', height: 96 },
   numberTile: { flex: 1, height: 96, borderRightWidth: 1, borderBottomWidth: 1, borderColor: '#507a67', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  numberCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  numberCircle: { width: 53, height: 44, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   greenNumber: { backgroundColor: '#0f7a46' }, redNumber: { backgroundColor: '#b8141b' }, blackNumber: { backgroundColor: '#020202' },
   numberLabel: { color: '#fff', fontSize: 27, fontWeight: '800' },
+  twoDigitNumber: { fontSize: 23 },
+  selectedNumberCircle: { borderWidth: 3, borderColor: '#fff43c', shadowColor: '#fff43c', shadowOpacity: 0.9, shadowRadius: 7, elevation: 8 },
   betSquare: { position: 'absolute', width: 40, height: 32, borderRadius: 4, backgroundColor: '#ccd900', alignItems: 'center', justifyContent: 'center' },
   betLeft: { left: 8 }, betRight: { right: 8 }, betTop: { top: 8 }, betBottom: { bottom: 8 }, betPressed: { backgroundColor: '#fff83a' },
+  selectedBet: { backgroundColor: '#fff43c', borderWidth: 3, borderColor: '#ff8a00', shadowColor: '#fff43c', shadowOpacity: 1, shadowRadius: 7, elevation: 8 },
   betSquareText: { fontSize: 14, fontWeight: '800', color: '#050505' },
   menuOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,35,21,0.16)', alignItems: 'center', justifyContent: 'center' },
   menuCard: { width: 283, paddingVertical: 23, borderRadius: 25, backgroundColor: 'rgba(89,180,91,0.9)', alignItems: 'center', gap: 12 },
   menuItem: { color: '#fff', fontFamily: 'serif', fontWeight: '900', fontSize: 26, lineHeight: 45, textShadowColor: 'rgba(0,0,0,.18)', textShadowRadius: 2 },
-  menuClose: { position: 'absolute', left: 7, top: 203 },
+  menuDismissArea: { position: 'absolute', left: 0, top: 205, width: 58, height: 58, backgroundColor: 'transparent' },
   backButton: { width: 45, height: 45, position: 'relative' },
   backDoor: { position: 'absolute', right: 1, top: 6, width: 25, height: 31, borderWidth: 2, borderColor: '#ef383d', borderRadius: 3 },
   backDoorLight: { borderColor: '#ef383d' },
