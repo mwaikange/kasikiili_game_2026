@@ -15,6 +15,8 @@ The patch:
 - keeps the table active after Unity's roulette reset;
 - allows START to continue without the dead connection-check endpoint;
 - makes the original hamburger menu open unconditionally;
+- opens leaderboard synchronously with local data and signs out directly to login;
+- removes state, debounce and connection gates from yellow selection and START;
 - supplies local probability, balance, leaderboard and prize data; and
 - disables the obsolete Firebase registration call.
 

@@ -41,6 +41,8 @@ PatchOfflineConnection(module);
 PatchOfflineLogin(module);
 PatchLoginButton(module);
 PatchOpenMenu(module);
+PatchLogoutButton(module);
+PatchGameInputs(module);
 PatchProbability(module);
 PatchNoOp(module, "APIManager", "CallFcmAPI");
 PatchJsonApi(
@@ -49,6 +51,7 @@ PatchJsonApi(
     "APIManager/<GetLeaderboardResponse>d__12",
     "leaderboard",
     "{\"data\":{\"active_referrals\":\"245\",\"player_position\":\"148\",\"candidates\":[{\"rank\":\"1\",\"mobile_number\":\"26481 XXX 2569\",\"score\":97.0,\"is_upgraded\":true},{\"rank\":\"2\",\"mobile_number\":\"26481 XXX 2569\",\"score\":92.0,\"is_upgraded\":false},{\"rank\":\"3\",\"mobile_number\":\"26481 XXX 2569\",\"score\":88.0,\"is_upgraded\":false},{\"rank\":\"4\",\"mobile_number\":\"26481 XXX 2569\",\"score\":76.0,\"is_upgraded\":true},{\"rank\":\"5\",\"mobile_number\":\"26481 XXX 2569\",\"score\":75.0,\"is_upgraded\":false},{\"rank\":\"6\",\"mobile_number\":\"26481 XXX 2569\",\"score\":69.0,\"is_upgraded\":true},{\"rank\":\"7\",\"mobile_number\":\"26481 XXX 2569\",\"score\":35.0,\"is_upgraded\":false},{\"rank\":\"8\",\"mobile_number\":\"26481 XXX 2569\",\"score\":30.0,\"is_upgraded\":false},{\"rank\":\"9\",\"mobile_number\":\"26481 XXX 2569\",\"score\":26.0,\"is_upgraded\":false},{\"rank\":\"10\",\"mobile_number\":\"26481 XXX 2569\",\"score\":18.0,\"is_upgraded\":false}],\"player\":{\"rank\":\"148\",\"mobile_number\":\"081 XXX 0000\",\"score\":2.0,\"is_upgraded\":true}}}");
+PatchLeaderboardOpen(module);
 PatchJsonApi(
     module,
     "CallPrizeDistributionAPI",
@@ -305,6 +308,125 @@ static void PatchLoginButton(ModuleDefinition module)
     il.Append(il.Create(OpCodes.Call, loadScene));
     il.Append(il.Create(OpCodes.Ret));
     Console.WriteLine("Patched SIGN IN button to load the Unity Game scene directly.");
+}
+
+static void PatchLogoutButton(ModuleDefinition module)
+{
+    var type = FindType(module, "Components.LogoutMenuInput");
+    var method = type.Methods.Single(m => m.Name == "OnClick");
+    var gameManager = FindType(module, "ViewModel.GameManager");
+    var gameScene = FindType(module, "ViewModel.GameScene");
+    var getGameScene = gameManager.Methods.Single(m => m.Name == "GetGameScene");
+    var loadScene = FindType(module, "ViewModel.LoaderManager").Methods
+        .Where(m => m.HasBody).SelectMany(m => m.Body.Instructions)
+        .Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.DeclaringType.FullName == "UnityEngine.SceneManagement.SceneManager"
+            && m.Name == "LoadScene" && m.Parameters.Count == 1);
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "gameManager")));
+    il.Append(il.Create(OpCodes.Ldc_I4_2));
+    il.Append(il.Create(OpCodes.Callvirt, getGameScene));
+    il.Append(il.Create(OpCodes.Ldfld, gameScene.Fields.Single(f => f.Name == "index")));
+    il.Append(il.Create(OpCodes.Call, loadScene));
+    il.Append(il.Create(OpCodes.Ret));
+    Console.WriteLine("Patched SIGN OUT to load the Unity Menu scene directly.");
+}
+
+static void PatchGameInputs(ModuleDefinition module)
+{
+    var tableType = FindType(module, "Components.TableButtonInput");
+    var tableClick = tableType.Methods.Single(m => m.Name == "Click");
+    var clickButton = tableClick.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "ClickButton");
+    var executeButton = tableClick.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "Execute");
+    var tableIl = tableClick.Body.GetILProcessor();
+    ResetBody(tableClick);
+    tableIl.Append(tableIl.Create(OpCodes.Ldarg_0));
+    tableIl.Append(tableIl.Create(OpCodes.Ldfld, tableType.Fields.Single(f => f.Name == "tableCmdFactory")));
+    tableIl.Append(tableIl.Create(OpCodes.Ldarg_0));
+    tableIl.Append(tableIl.Create(OpCodes.Ldfld, tableType.Fields.Single(f => f.Name == "tableManager")));
+    tableIl.Append(tableIl.Create(OpCodes.Ldarg_0));
+    tableIl.Append(tableIl.Create(OpCodes.Ldfld, tableType.Fields.Single(f => f.Name == "tableButton")));
+    tableIl.Append(tableIl.Create(OpCodes.Callvirt, clickButton));
+    tableIl.Append(tableIl.Create(OpCodes.Callvirt, executeButton));
+    tableIl.Append(tableIl.Create(OpCodes.Ret));
+
+    var roundType = FindType(module, "Components.RoundStartInput");
+    var roundClick = roundType.Methods.Single(m => m.Name == "Click");
+    var startInput = roundType.Methods.Single(m => m.Name == "StartInput");
+    var startRound = startInput.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "StartRound" && m.ReturnType.FullName == "Commands.StartRoundCmd");
+    var executeRound = startInput.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "Execute" && m.DeclaringType.FullName == "Commands.StartRoundCmd");
+    var rouletteManager = FindType(module, "ViewModel.RouletteManager");
+    var setBool = FindMethod(module, "Commands.RouletteStateCmd", "Play")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "set_Value" && m.DeclaringType.FullName.Contains("System.Boolean", StringComparison.Ordinal));
+    var roundIl = roundClick.Body.GetILProcessor();
+    ResetBody(roundClick);
+    foreach (var fieldName in new[] { "tableActive", "gameActive" })
+    {
+        roundIl.Append(roundIl.Create(OpCodes.Ldarg_0));
+        roundIl.Append(roundIl.Create(OpCodes.Ldfld, roundType.Fields.Single(f => f.Name == "rouletteManager")));
+        roundIl.Append(roundIl.Create(OpCodes.Ldfld, rouletteManager.Fields.Single(f => f.Name == fieldName)));
+        roundIl.Append(roundIl.Create(OpCodes.Ldc_I4_1));
+        roundIl.Append(roundIl.Create(OpCodes.Callvirt, setBool));
+    }
+    roundIl.Append(roundIl.Create(OpCodes.Ldarg_0));
+    roundIl.Append(roundIl.Create(OpCodes.Ldfld, roundType.Fields.Single(f => f.Name == "roundCmdFactory")));
+    roundIl.Append(roundIl.Create(OpCodes.Ldarg_0));
+    roundIl.Append(roundIl.Create(OpCodes.Ldfld, roundType.Fields.Single(f => f.Name == "rouletteManager")));
+    roundIl.Append(roundIl.Create(OpCodes.Ldarg_0));
+    roundIl.Append(roundIl.Create(OpCodes.Ldfld, roundType.Fields.Single(f => f.Name == "roundManager")));
+    roundIl.Append(roundIl.Create(OpCodes.Ldarg_0));
+    roundIl.Append(roundIl.Create(OpCodes.Ldfld, roundType.Fields.Single(f => f.Name == "tableManager")));
+    roundIl.Append(roundIl.Create(OpCodes.Callvirt, startRound));
+    roundIl.Append(roundIl.Create(OpCodes.Callvirt, executeRound));
+    roundIl.Append(roundIl.Create(OpCodes.Ret));
+    Console.WriteLine("Patched yellow selectors and START to bypass all legacy state/network gates.");
+}
+
+static void PatchLeaderboardOpen(ModuleDefinition module)
+{
+    const string json = "{\"data\":{\"active_referrals\":\"245\",\"player_position\":\"148\",\"candidates\":[{\"rank\":\"1\",\"mobile_number\":\"26481 XXX 2569\",\"score\":97.0,\"is_upgraded\":true},{\"rank\":\"2\",\"mobile_number\":\"26481 XXX 2569\",\"score\":92.0,\"is_upgraded\":false},{\"rank\":\"3\",\"mobile_number\":\"26481 XXX 2569\",\"score\":88.0,\"is_upgraded\":false},{\"rank\":\"4\",\"mobile_number\":\"26481 XXX 2569\",\"score\":76.0,\"is_upgraded\":true},{\"rank\":\"5\",\"mobile_number\":\"26481 XXX 2569\",\"score\":75.0,\"is_upgraded\":false},{\"rank\":\"6\",\"mobile_number\":\"26481 XXX 2569\",\"score\":69.0,\"is_upgraded\":true},{\"rank\":\"7\",\"mobile_number\":\"26481 XXX 2569\",\"score\":35.0,\"is_upgraded\":false},{\"rank\":\"8\",\"mobile_number\":\"26481 XXX 2569\",\"score\":30.0,\"is_upgraded\":false},{\"rank\":\"9\",\"mobile_number\":\"26481 XXX 2569\",\"score\":26.0,\"is_upgraded\":false},{\"rank\":\"10\",\"mobile_number\":\"26481 XXX 2569\",\"score\":18.0,\"is_upgraded\":false}],\"player\":{\"rank\":\"148\",\"mobile_number\":\"081 XXX 0000\",\"score\":2.0,\"is_upgraded\":true}}}";
+    var type = FindType(module, "Leaderboard");
+    var method = type.Methods.Single(m => m.Name == "OpenLeaderboard");
+    var iterator = FindType(module, "APIManager/<GetLeaderboardResponse>d__12").Methods.Single(m => m.Name == "MoveNext");
+    var fromJson = iterator.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "FromJson");
+    var singleton = FindType(module, "Singleton");
+    var dataManager = FindType(module, "DataManager");
+    var setActive = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "SetActive");
+    var disable = FindType(module, "Loading").Methods.Single(m => m.Name == "Disable");
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    il.Append(il.Create(OpCodes.Call, singleton.Methods.Single(m => m.Name == "get_Instance")));
+    il.Append(il.Create(OpCodes.Ldfld, singleton.Fields.Single(f => f.Name == "dataManager")));
+    il.Append(il.Create(OpCodes.Ldstr, json));
+    il.Append(il.Create(OpCodes.Call, fromJson));
+    il.Append(il.Create(OpCodes.Stfld, dataManager.Fields.Single(f => f.Name == "leaderboard")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "LoadLeaderboardData")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "loading")));
+    il.Append(il.Create(OpCodes.Callvirt, disable));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "menuAnchor")));
+    il.Append(il.Create(OpCodes.Ldc_I4_0));
+    il.Append(il.Create(OpCodes.Callvirt, setActive));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "leaderBoard")));
+    il.Append(il.Create(OpCodes.Ldc_I4_1));
+    il.Append(il.Create(OpCodes.Callvirt, setActive));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldc_I4_0));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "HandleCanvasSettings")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Call, type.Methods.Single(m => m.Name == "ShowUpgradedAnimation")));
+    il.Append(il.Create(OpCodes.Ret));
+    Console.WriteLine("Patched leaderboard to open synchronously with local data.");
 }
 
 static void PatchOpenMenu(ModuleDefinition module)
