@@ -1,5 +1,14 @@
 # Kasikili APK recovery report
 
+## Offline playable recovery
+
+`Recovery/OfflineApkPatcher` contains the reproducible Mono.Cecil patch used to
+make the original V2.0.1 Unity APK testable without its retired backend. The
+patched build retains the original artwork, scenes, sounds and interaction code,
+starts at N$500, restores offline authentication flows, keeps the betting table
+interactive, bypasses the obsolete START connection probe and opens the original
+hamburger menu. See the patcher's README for build and signing boundaries.
+
 Date: 2026-08-03
 
 ## Selected recovery target
