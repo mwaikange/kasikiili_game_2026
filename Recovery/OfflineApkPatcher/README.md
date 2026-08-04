@@ -12,11 +12,15 @@ The patch:
   bypassing validation, authentication, loaders, callbacks and event listeners;
 - replaces the dead authentication, OTP and password-reset HTTP responses locally;
 - starts the wallet at N$500 and prevents the old credit limit from locking play;
+- enables `gameActive` and `tableActive` only after confirming the initialized
+  local credit is greater than zero;
 - keeps the table active after Unity's roulette reset;
 - allows START to continue without the dead connection-check endpoint;
-- makes the original hamburger menu open unconditionally;
+- keeps the original hamburger, betting and START state guards so interaction is
+  blocked correctly during spins, settlement, overlays and unavailable states;
 - opens leaderboard synchronously with local data and signs out directly to login;
-- removes state, debounce and connection gates from yellow selection and START;
+- replaces only the retired startup/balance and connectivity confirmations with
+  the local N$500 wallet and immediate offline connection success;
 - supplies local probability, balance, leaderboard and prize data; and
 - disables the obsolete Firebase registration call.
 
