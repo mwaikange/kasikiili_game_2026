@@ -38,6 +38,7 @@ PatchLocalWallet(module);
 PatchRoundLimit(module);
 PatchRouletteStartupActive(module);
 PatchOfflineConnection(module);
+PatchOfflineLogin(module);
 PatchOpenMenu(module);
 PatchProbability(module);
 PatchNoOp(module, "APIManager", "CallFcmAPI");
@@ -188,27 +189,85 @@ static void PatchRouletteStartupActive(ModuleDefinition module)
 
 static void PatchOfflineConnection(ModuleDefinition module)
 {
-    var type = FindType(module, "Commands.TestGameConnectionCmd");
+    var gameManager = FindType(module, "ViewModel.GameManager");
+    foreach (var typeName in new[] { "Commands.TestConnectionCmd", "Commands.TestGameConnectionCmd" })
+    {
+        var type = FindType(module, typeName);
+        var execute = type.Methods.Single(m => m.Name == "Execute");
+        var success = type.Methods.Single(m => m.Name == "ConnectionSuccess");
+        var managerField = type.Fields.Single(f => f.Name == "_gameManager");
+        var onNext = success.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+            .First(m => m.Name == "OnNext");
+        var il = execute.Body.GetILProcessor();
+        ResetBody(execute);
+        il.Append(il.Create(OpCodes.Ldarg_0));
+        il.Append(il.Create(OpCodes.Ldfld, managerField));
+        il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnApplicationStart")));
+        il.Append(il.Create(OpCodes.Ldc_I4_1));
+        il.Append(il.Create(OpCodes.Callvirt, onNext));
+        il.Append(il.Create(OpCodes.Ldarg_0));
+        il.Append(il.Create(OpCodes.Ldfld, managerField));
+        il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnConnectionSuccess")));
+        il.Append(il.Create(OpCodes.Ldc_I4_1));
+        il.Append(il.Create(OpCodes.Callvirt, onNext));
+        il.Append(il.Create(OpCodes.Ret));
+    }
+    Console.WriteLine("Patched startup and START connection checks for offline play.");
+}
+
+static void PatchOfflineLogin(ModuleDefinition module)
+{
+    var type = FindType(module, "Commands.PostUserLoginCmd");
     var execute = type.Methods.Single(m => m.Name == "Execute");
-    var success = type.Methods.Single(m => m.Name == "ConnectionSuccess");
     var managerField = type.Fields.Single(f => f.Name == "_gameManager");
     var gameManager = FindType(module, "ViewModel.GameManager");
-    var onNext = success.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+    var loaderManager = FindType(module, "ViewModel.LoaderManager");
+    var parse = AllTypes(module)
+        .Where(t => t.FullName.StartsWith("Commands.PostUserLoginCmd/", StringComparison.Ordinal))
+        .SelectMany(t => t.Methods)
+        .Where(m => m.HasBody)
+        .SelectMany(m => m.Body.Instructions)
+        .Select(i => i.Operand)
+        .OfType<MethodReference>()
+        .First(m => m.DeclaringType.FullName == "SimpleJSON.JSON" && m.Name == "Parse");
+    var onNext = execute.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
         .First(m => m.Name == "OnNext");
     var il = execute.Body.GetILProcessor();
     ResetBody(execute);
+
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
-    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnApplicationStart")));
     il.Append(il.Create(OpCodes.Ldc_I4_1));
-    il.Append(il.Create(OpCodes.Callvirt, onNext));
+    il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "userId")));
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
-    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnConnectionSuccess")));
+    il.Append(il.Create(OpCodes.Ldstr, "offline"));
+    il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "userAccessToken")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, managerField));
+    il.Append(il.Create(OpCodes.Ldstr, "{\"user_id\":1,\"accesstoken\":\"offline\",\"referral_link\":\"offline\",\"mobile_number\":\"0810000000\",\"region\":\"KHOMAS\"}"));
+    il.Append(il.Create(OpCodes.Call, parse));
+    il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "UserData")));
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, managerField));
+    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "loaderManager")));
+    il.Append(il.Create(OpCodes.Ldc_I4_0));
+    il.Append(il.Create(OpCodes.Stfld, loaderManager.Fields.Single(f => f.Name == "loadingQueue")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, managerField));
+    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "loaderManager")));
+    il.Append(il.Create(OpCodes.Ldfld, loaderManager.Fields.Single(f => f.Name == "OnLoading")));
+    il.Append(il.Create(OpCodes.Ldc_I4_0));
+    il.Append(il.Create(OpCodes.Callvirt, onNext));
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, managerField));
+    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnLoginSuccess")));
     il.Append(il.Create(OpCodes.Ldc_I4_1));
     il.Append(il.Create(OpCodes.Callvirt, onNext));
     il.Append(il.Create(OpCodes.Ret));
-    Console.WriteLine("Patched START connection check for offline play.");
+    Console.WriteLine("Patched login to complete synchronously without a loading wait.");
 }
 
 static void PatchOpenMenu(ModuleDefinition module)

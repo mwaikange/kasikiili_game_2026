@@ -6,7 +6,8 @@ Kasikili V2.0.1 Mono Unity assembly. It does not replace or redraw the UI.
 The patch:
 
 - preserves the APK's original login, signup, forgot-password, game and menu scenes;
-- accepts any non-empty mobile number and password offline;
+- accepts any non-empty mobile number and password synchronously offline, without
+  opening or waiting on the legacy loading/server chain;
 - replaces the dead authentication, OTP and password-reset HTTP responses locally;
 - starts the wallet at N$500 and prevents the old credit limit from locking play;
 - keeps the table active after Unity's roulette reset;
