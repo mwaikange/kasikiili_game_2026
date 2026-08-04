@@ -25,8 +25,24 @@ const art = {
 type Screen = 'login' | 'signup' | 'forgot' | 'game' | 'account' | 'notifications' | 'leaderboard';
 
 const multipliers = ['10', '50', '1000', '2000', '25', '100'];
-const numberRows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+const multiplierWidths = [40, 40, 53, 53, 40, 40];
 const redNumbers = new Set([1, 3, 5, 7, 9, 11]);
+type BetLayout = { number: number; ellipseX: number; ellipseY: number; leftX: number; rightX: number; topY: number; bottomY: number };
+const betLayouts: BetLayout[] = [
+  { number: 0, ellipseX: 150, ellipseY: 30, leftX: 129, rightX: 192, topY: 12, bottomY: 60 },
+  { number: 1, ellipseX: 28, ellipseY: 125, leftX: 6, rightX: 66, topY: 108, bottomY: 157 },
+  { number: 2, ellipseX: 148, ellipseY: 125, leftX: 123, rightX: 186, topY: 108, bottomY: 157 },
+  { number: 3, ellipseX: 271, ellipseY: 125, leftX: 243, rightX: 306, topY: 108, bottomY: 157 },
+  { number: 4, ellipseX: 28, ellipseY: 222, leftX: 6, rightX: 66, topY: 202, bottomY: 251 },
+  { number: 5, ellipseX: 148, ellipseY: 222, leftX: 123, rightX: 186, topY: 202, bottomY: 251 },
+  { number: 6, ellipseX: 271, ellipseY: 222, leftX: 243, rightX: 306, topY: 202, bottomY: 251 },
+  { number: 7, ellipseX: 28, ellipseY: 310, leftX: 6, rightX: 66, topY: 296, bottomY: 345 },
+  { number: 8, ellipseX: 147, ellipseY: 310, leftX: 123, rightX: 186, topY: 296, bottomY: 345 },
+  { number: 9, ellipseX: 271, ellipseY: 310, leftX: 243, rightX: 306, topY: 296, bottomY: 345 },
+  { number: 10, ellipseX: 28, ellipseY: 407, leftX: 6, rightX: 66, topY: 391, bottomY: 440 },
+  { number: 11, ellipseX: 148, ellipseY: 407, leftX: 123, rightX: 186, topY: 391, bottomY: 440 },
+  { number: 12, ellipseX: 268, ellipseY: 407, leftX: 243, rightX: 306, topY: 391, bottomY: 440 },
+];
 const leaders = [
   ['1', '26481 XXX 2569', '97%', 'up', 'gold'],
   ['2', '26481 XXX 2569', '92%', 'down', 'white'],
@@ -199,24 +215,25 @@ function WheelAssembly({ rotation, win, credit }: { rotation: Animated.AnimatedI
 }
 
 function BetNumber({
-  number,
+  layout,
   selectedNumber,
   selectedStake,
   onSelect,
 }: {
-  number: number;
+  layout: BetLayout;
   selectedNumber: number | null;
   selectedStake: number;
   onSelect: (number: number, stake: number) => void;
 }) {
+  const { number, ellipseX, ellipseY, leftX, rightX, topY, bottomY } = layout;
   const red = redNumbers.has(number);
   const numberSelected = selectedNumber === number;
   return (
-    <View style={styles.numberTile}>
+    <View pointerEvents="box-none" style={styles.betLayer}>
       <Pressable
         accessibilityLabel={`Select number ${number}`}
         onPress={() => onSelect(number, selectedStake || 1)}
-        style={[styles.numberCircle, number === 0 ? styles.greenNumber : red ? styles.redNumber : styles.blackNumber, numberSelected && styles.selectedNumberCircle]}
+        style={[styles.numberCircle, { left: ellipseX, top: ellipseY }, number === 0 ? styles.greenNumber : red ? styles.redNumber : styles.blackNumber, numberSelected && styles.selectedNumberCircle]}
       >
         <Text style={[styles.numberLabel, number >= 10 && styles.twoDigitNumber]}>{number}</Text>
       </Pressable>
@@ -227,8 +244,7 @@ function BetNumber({
           onPress={() => onSelect(number, Number(value))}
           style={({ pressed }) => [
             styles.betSquare,
-            index % 2 === 0 ? styles.betLeft : styles.betRight,
-            index < 2 ? styles.betTop : styles.betBottom,
+            { left: index % 2 === 0 ? leftX : rightX, top: index < 2 ? topY : bottomY },
             numberSelected && selectedStake === Number(value) && styles.selectedBet,
             pressed && styles.betPressed,
           ]}
@@ -276,21 +292,22 @@ function GameScreen({ navigate }: { navigate: (screen: Screen) => void }) {
     <SafeAreaView style={styles.gameRoot}>
       <AppStatusBar />
       <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.gamePage}>
-        <View style={{ width: 375 * scale, height: 783 * scale }}>
-          <View style={{ width: 375, height: 783, paddingTop: 20, transform: [{ scale }], transformOrigin: 'top left' } as never}>
+        <View style={{ width: 375 * scale, height: 770 * scale }}>
+          <View style={{ width: 375, height: 770, transform: [{ scale }], transformOrigin: 'top left' } as never}>
             <WheelAssembly rotation={rotation} win={win} credit={credit} />
             <Text style={styles.gameHeading}>KASIKILI BERGMANN ROULETTE</Text>
             <View style={styles.gameControls}>
               <View style={styles.controlMenu}><Hamburger onPress={() => setMenu(true)} /></View>
-              <View style={styles.multiplierRow}>{multipliers.map((value) => <Text key={value} style={styles.multiplier}>{value}</Text>)}</View>
+              <View style={styles.multiplierRow}>{multipliers.map((value, index) => <Text key={value} style={[styles.multiplier, { width: multiplierWidths[index], marginLeft: index === 0 ? 0 : -1 }]}>{value}</Text>)}</View>
               <View style={styles.actionRow}>
                 <Pressable style={styles.cancelButton} onPress={() => { setWin(0); setSelectedNumber(null); setSelectedStake(1); }}><Text style={styles.gameButtonText}>CANCEL</Text></Pressable>
                 <Pressable style={styles.startButton} onPress={start}><Text style={[styles.gameButtonText, styles.startText]}>START</Text></Pressable>
               </View>
             </View>
             <View style={styles.betTable}>
-              <View style={styles.tableRow}><View style={styles.numberTile} /><BetNumber number={0} selectedNumber={selectedNumber} selectedStake={selectedStake} onSelect={(number, stake) => { setSelectedNumber(number); setSelectedStake(stake); }} /><View style={styles.numberTile} /></View>
-              {numberRows.map((row) => <View key={row.join('-')} style={styles.tableRow}>{row.map((number) => <BetNumber key={number} number={number} selectedNumber={selectedNumber} selectedStake={selectedStake} onSelect={(nextNumber, stake) => { setSelectedNumber(nextNumber); setSelectedStake(stake); }} />)}</View>)}
+              <View style={[styles.gridVertical, { left: 120 }]} /><View style={[styles.gridVertical, { left: 242 }]} />
+              {[99, 194, 289, 385].map((top) => <View key={top} style={[styles.gridHorizontal, { top }]} />)}
+              {betLayouts.map((layout) => <BetNumber key={layout.number} layout={layout} selectedNumber={selectedNumber} selectedStake={selectedStake} onSelect={(number, stake) => { setSelectedNumber(number); setSelectedStake(stake); }} />)}
             </View>
           </View>
         </View>
@@ -459,9 +476,9 @@ const styles = StyleSheet.create({
   forgotHeading: { fontSize: 20, fontWeight: '900', marginTop: 37 },
   forgotCopy: { width: '88%', textAlign: 'center', color: '#006b8a', fontSize: 12, lineHeight: 18, marginVertical: 17 },
   forgotBack: { marginTop: 16, fontWeight: '700' },
-  gameRoot: { flex: 1, backgroundColor: '#003f27' },
+  gameRoot: { flex: 1, backgroundColor: '#033521' },
   gamePage: { alignItems: 'center', minHeight: 770 },
-  wheelAssembly: { width: 375, height: 182, position: 'relative', overflow: 'hidden' },
+  wheelAssembly: { width: 375, height: 177, position: 'relative', overflow: 'hidden' },
   winPanel: { position: 'absolute', left: 4, top: 15, width: 177, height: 194 },
   creditPanel: { position: 'absolute', right: 4, top: 15, width: 177, height: 194 },
   gameWheel: { position: 'absolute', left: 92, top: 0, width: 191, height: 191 },
@@ -469,28 +486,29 @@ const styles = StyleSheet.create({
   creditDigits: { position: 'absolute', right: 16, top: 76 },
   digitDisplay: { width: 69, height: 25, borderWidth: 3, borderColor: '#ff1720', backgroundColor: '#b21419', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly' },
   digit: { color: '#fff', fontSize: 17, fontWeight: '900', fontFamily: 'monospace' },
-  gameHeading: { color: '#fff', fontFamily: 'serif', textDecorationLine: 'underline', fontSize: 16, textAlign: 'center', height: 25 },
-  gameControls: { height: 74, position: 'relative' },
-  controlMenu: { position: 'absolute', left: 6, top: -1 },
-  hamburger: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ced900', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  gameHeading: { color: '#fff', fontFamily: 'serif', textDecorationLine: 'underline', fontSize: 16, textAlign: 'center', height: 27 },
+  gameControls: { height: 79, position: 'relative' },
+  controlMenu: { position: 'absolute', left: 7, top: -1 },
+  hamburger: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#c5c916', alignItems: 'center', justifyContent: 'center', gap: 3 },
   hamburgerLine: { width: 22, height: 3, borderRadius: 2, backgroundColor: '#183d27' },
-  multiplierRow: { flexDirection: 'row', justifyContent: 'center' },
-  multiplier: { height: 39, minWidth: 41, paddingHorizontal: 8, borderWidth: 1, borderColor: '#fff', backgroundColor: '#9d1014', color: '#fff', fontFamily: 'serif', fontSize: 17, textAlign: 'center', textAlignVertical: 'center' },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 88, marginTop: 5 },
-  cancelButton: { width: 58, height: 30, borderRadius: 6, backgroundColor: '#ced900', alignItems: 'center', justifyContent: 'center' },
-  startButton: { width: 58, height: 30, borderRadius: 6, backgroundColor: '#9c1014', alignItems: 'center', justifyContent: 'center' },
+  multiplierRow: { flexDirection: 'row', marginLeft: 58 },
+  multiplier: { height: 36, paddingHorizontal: 0, borderWidth: 1, borderColor: '#fff', backgroundColor: '#8b0f0f', color: '#fff', fontFamily: 'serif', fontSize: 17, textAlign: 'center', textAlignVertical: 'center' },
+  actionRow: { height: 30, marginTop: 7, position: 'relative' },
+  cancelButton: { position: 'absolute', left: 88, width: 57, height: 30, borderRadius: 6, backgroundColor: '#c5c916', alignItems: 'center', justifyContent: 'center' },
+  startButton: { position: 'absolute', left: 231, width: 57, height: 30, borderRadius: 6, backgroundColor: '#8b0f0f', alignItems: 'center', justifyContent: 'center' },
   gameButtonText: { fontFamily: 'serif', color: '#050505', fontSize: 11 },
   startText: { color: '#fff' },
-  betTable: { width: 355, height: 482, borderWidth: 1, borderColor: '#507a67', alignSelf: 'center' },
-  tableRow: { flexDirection: 'row', height: 96 },
-  numberTile: { flex: 1, height: 96, borderRightWidth: 1, borderBottomWidth: 1, borderColor: '#507a67', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  numberCircle: { width: 53, height: 44, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
-  greenNumber: { backgroundColor: '#0f7a46' }, redNumber: { backgroundColor: '#b8141b' }, blackNumber: { backgroundColor: '#020202' },
+  betTable: { width: 355, height: 481, borderWidth: 1, borderColor: '#6e877d', alignSelf: 'center', position: 'relative' },
+  gridVertical: { position: 'absolute', top: 0, width: 1, height: 480, backgroundColor: '#6e877d' },
+  gridHorizontal: { position: 'absolute', left: 0, width: 354, height: 1, backgroundColor: '#6e877d' },
+  betLayer: { ...StyleSheet.absoluteFillObject },
+  numberCircle: { position: 'absolute', width: 53, height: 44, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  greenNumber: { backgroundColor: '#0f393b' }, redNumber: { backgroundColor: '#8b0f0f' }, blackNumber: { backgroundColor: '#000' },
   numberLabel: { color: '#fff', fontSize: 27, fontWeight: '800' },
   twoDigitNumber: { fontSize: 23 },
   selectedNumberCircle: { borderWidth: 3, borderColor: '#fff43c', shadowColor: '#fff43c', shadowOpacity: 0.9, shadowRadius: 7, elevation: 8 },
-  betSquare: { position: 'absolute', width: 40, height: 32, borderRadius: 4, backgroundColor: '#ccd900', alignItems: 'center', justifyContent: 'center' },
-  betLeft: { left: 8 }, betRight: { right: 8 }, betTop: { top: 8 }, betBottom: { bottom: 8 }, betPressed: { backgroundColor: '#fff83a' },
+  betSquare: { position: 'absolute', width: 40, height: 32, borderRadius: 3, backgroundColor: '#c5c916', alignItems: 'center', justifyContent: 'center' },
+  betPressed: { backgroundColor: '#fff83a' },
   selectedBet: { backgroundColor: '#fff43c', borderWidth: 3, borderColor: '#ff8a00', shadowColor: '#fff43c', shadowOpacity: 1, shadowRadius: 7, elevation: 8 },
   betSquareText: { fontSize: 14, fontWeight: '800', color: '#050505' },
   menuOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,35,21,0.16)', alignItems: 'center', justifyContent: 'center' },
