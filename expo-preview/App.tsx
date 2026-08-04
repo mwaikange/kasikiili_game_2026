@@ -3,464 +3,514 @@ import React, { useRef, useState } from 'react';
 import {
   Animated,
   Image,
-  ImageBackground,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 const art = {
-  logo: require('./assets/latest/kasikili-logo.png'),
-  title: require('./assets/latest/kasikili-title.png'),
-  greenBox: require('./assets/latest/box_green.png'),
-  orangeBox: require('./assets/latest/box_orange.png'),
-  orangeSmall: require('./assets/latest/box_orange_sm.png'),
-  violetBox: require('./assets/latest/box-violet-2.png'),
-  whiteBox: require('./assets/latest/box-white.png'),
-  line: require('./assets/latest/line_0.png'),
-  signup: require('./assets/latest/sign-up-here.png'),
-  forgot: require('./assets/latest/forget-password.png'),
-  terms: require('./assets/latest/terms-blue.png'),
   wheel: require('./assets/latest/wheel.png'),
-  wheelCredit: require('./assets/latest/wheel_credit.png'),
-  wheelWin: require('./assets/latest/wheel_win.png'),
-  greenCell: require('./assets/latest/circle_green.png'),
-  redCell: require('./assets/latest/circle_red.png'),
-  blackCell: require('./assets/latest/circle_black.png'),
-  bet: require('./assets/latest/button_bet.png'),
-  start: require('./assets/latest/button_start.png'),
-  cancel: require('./assets/latest/button_cancel.png'),
-  menu: require('./assets/latest/button_menu.png'),
-  probability: require('./assets/latest/spin_probability.png'),
-  gameLines: require('./assets/latest/lines.png'),
-  menuBackdrop: require('./assets/latest/ui_menu.png'),
+  win: require('./assets/latest/wheel_win.png'),
+  credit: require('./assets/latest/wheel_credit.png'),
   crown: require('./assets/latest/Top 3.png'),
-  leaderRow: require('./assets/latest/bg (3).png'),
-  playerRow: require('./assets/latest/bg (2).png'),
-  arrowUp: require('./assets/latest/Polygon 8.png'),
-  arrowDown: require('./assets/latest/Polygon 6.png'),
-  refresh: require('./assets/latest/Group 2600.png'),
-  download: require('./assets/latest/Group 2601.png'),
-  close: require('./assets/latest/sign-out-square.png'),
-  photo: require('./assets/latest/Photo.png'),
-  accountTitle: require('./assets/latest/account-title.png'),
-  mobileLabel: require('./assets/latest/Mobile Number.png'),
-  regionLabel: require('./assets/latest/Region.png'),
-  balanceLabel: require('./assets/latest/balance-label.png'),
-  accountInput: require('./assets/latest/Rectangle 18.png'),
-  cashoutLabel: require('./assets/latest/cashout-label.png'),
-  bitcoinWallet: require('./assets/latest/bitcoin-wallet.png'),
-  referral: require('./assets/latest/Untitled-1.png'),
-  historyTitle: require('./assets/latest/history-title.png'),
-  tableTitles: require('./assets/latest/table-titles.png'),
 };
 
-type Screen = 'login' | 'register' | 'game' | 'leaders' | 'wallet';
+type Screen = 'login' | 'signup' | 'forgot' | 'game' | 'account' | 'notifications' | 'leaderboard';
 
-const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const multipliers = ['10', '50', '1000', '2000', '25', '100'];
+const numberRows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
 const redNumbers = new Set([1, 3, 5, 7, 9, 11]);
 const leaders = [
-  ['1', '26481 XXX 2569', '98%', 'up'],
-  ['2', '26481 XXX 1074', '91%', 'up'],
-  ['3', '26485 XXX 6812', '86%', 'down'],
-  ['4', '26481 XXX 4430', '78%', 'up'],
-  ['5', '26481 XXX 9032', '72%', 'down'],
-  ['6', '26485 XXX 2215', '69%', 'up'],
-  ['7', '26481 XXX 7724', '63%', 'down'],
-  ['8', '26485 XXX 1408', '58%', 'up'],
-  ['9', '26481 XXX 6120', '54%', 'down'],
-  ['10', '26481 XXX 3051', '49%', 'up'],
+  ['1', '26481 XXX 2569', '97%', 'up', 'gold'],
+  ['2', '26481 XXX 2569', '92%', 'down', 'white'],
+  ['3', '26481 XXX 2569', '88%', 'down', 'white'],
+  ['4', '26481 XXX 2569', '76%', 'up', 'dark'],
+  ['5', '26481 XXX 2569', '75%', 'flat', 'dark'],
+  ['6', '26481 XXX 2569', '69%', 'up', 'dark'],
+  ['7', '26481 XXX 2569', '35%', 'flat', 'dark'],
+  ['8', '26481 XXX 2569', '30%', 'down', 'dark'],
+  ['9', '26481 XXX 2569', '26%', 'down', 'dark'],
+  ['10', '26481 XXX 2569', '18%', 'down', 'dark'],
 ] as const;
 
-function ArtButton({
-  source,
-  label,
-  onPress,
-  small,
-}: {
-  source: number;
-  label: string;
-  onPress: () => void;
-  small?: boolean;
-}) {
+function AppStatusBar() {
+  return <StatusBar hidden />;
+}
+
+function BackIcon({ onPress, light = false }: { onPress: () => void; light?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.artButton, small && styles.artButtonSmall, pressed && styles.pressed]}>
-      <ImageBackground source={source} resizeMode="stretch" style={styles.artButtonBackground}>
-        <Text style={[styles.artButtonLabel, small && styles.artButtonLabelSmall]}>{label}</Text>
-      </ImageBackground>
+    <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onPress} style={styles.backButton}>
+      <View style={[styles.backDoor, light && styles.backDoorLight]} />
+      <Text style={[styles.backArrow, light && styles.backArrowLight]}>←</Text>
     </Pressable>
   );
 }
 
-function LoginScreen({ onLogin, onRegister }: { onLogin: () => void; onRegister: () => void }) {
+function Hamburger({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Menu" onPress={onPress} style={styles.hamburger}>
+      <View style={styles.hamburgerLine} />
+      <View style={styles.hamburgerLine} />
+      <View style={styles.hamburgerLine} />
+    </Pressable>
+  );
+}
+
+function AuthHeader({ compact = false }: { compact?: boolean }) {
+  return (
+    <>
+      <Text style={styles.authTitle}>KASIKILI BERGMANN ROULETTE</Text>
+      <View style={styles.authRule} />
+      <Image source={art.wheel} resizeMode="contain" style={compact ? styles.authWheelCompact : styles.authWheel} />
+    </>
+  );
+}
+
+function AuthField({ label, secure = false }: { label: string; secure?: boolean }) {
+  return (
+    <TextInput
+      accessibilityLabel={label}
+      placeholder={label}
+      placeholderTextColor="#ffffff"
+      secureTextEntry={secure}
+      autoCapitalize="none"
+      style={styles.authField}
+    />
+  );
+}
+
+function OrangeButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.orangeButton, pressed && styles.pressed]}>
+      <Text style={styles.orangeButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function FooterLinks() {
+  return (
+    <>
+      <View style={styles.termsRow}>
+        <Text style={styles.authLink}>Terms of Service</Text><Text style={styles.authPipe}>|</Text><Text style={styles.authLink}>Privacy Policy</Text>
+      </View>
+      <Text style={styles.version}>VERSION 2.0.0 | © Copyright of Kasikili Virtual Gaming cc | 2025</Text>
+    </>
+  );
+}
+
+function LoginScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   const [remember, setRemember] = useState(true);
   return (
-    <KeyboardAvoidingView style={styles.loginRoot} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.loginScroll} keyboardShouldPersistTaps="handled">
-        <Image source={art.title} resizeMode="contain" style={styles.loginTitle} />
-        <Image source={art.logo} resizeMode="contain" style={styles.loginLogo} />
-        <Image source={art.line} resizeMode="stretch" style={styles.divider} />
-
-        <ImageBackground source={art.greenBox} resizeMode="stretch" style={styles.loginField}>
-          <Text style={styles.fieldLabel}>MOBILE NUMBER</Text>
-          <TextInput
-            accessibilityLabel="Mobile number"
-            keyboardType="phone-pad"
-            placeholder="264 81 000 0000"
-            placeholderTextColor="#bdd5c4"
-            style={styles.fieldInput}
-          />
-        </ImageBackground>
-        <ImageBackground source={art.greenBox} resizeMode="stretch" style={styles.loginField}>
-          <Text style={styles.fieldLabel}>PASSWORD</Text>
-          <TextInput
-            accessibilityLabel="Password"
-            secureTextEntry
-            placeholder="••••••••"
-            placeholderTextColor="#bdd5c4"
-            style={styles.fieldInput}
-          />
-        </ImageBackground>
-
+    <SafeAreaView style={styles.authRoot}>
+      <AppStatusBar />
+      <ScrollView contentContainerStyle={styles.loginContent} keyboardShouldPersistTaps="handled">
+        <AuthHeader />
+        <View style={styles.loginFields}>
+          <AuthField label="MOBILE NUMBER" />
+          <AuthField label="PASSWORD" secure />
+        </View>
         <View style={styles.rememberRow}>
-          <Text style={styles.rememberLabel}>REMEMBER PASSWORD ?</Text>
-          <Pressable onPress={() => setRemember(false)} style={[styles.choice, !remember && styles.choiceActive]}>
-            <Text style={[styles.choiceText, !remember && styles.choiceTextActive]}>NO</Text>
-          </Pressable>
-          <Text style={styles.choicePipe}>|</Text>
-          <Pressable onPress={() => setRemember(true)} style={[styles.choice, remember && styles.choiceActive]}>
-            <Text style={[styles.choiceText, remember && styles.choiceTextActive]}>YES</Text>
-          </Pressable>
+          <Text style={styles.rememberText}>REMEMBER PASSWORD ?</Text>
+          <Switch value={remember} onValueChange={setRemember} trackColor={{ false: '#d9d9d9', true: '#d9d9d9' }} thumbColor={remember ? '#10dc53' : '#aeb4b6'} style={styles.miniSwitch} />
+          <Text style={styles.rememberText}>[ NO | YES ]</Text>
         </View>
-
-        <ArtButton source={art.orangeBox} label="LOGIN" onPress={onLogin} />
-        <View style={styles.loginLinks}>
-          <Pressable onPress={onRegister}><Image source={art.signup} resizeMode="contain" style={styles.signupLink} /></Pressable>
-          <Image source={art.forgot} resizeMode="contain" style={styles.forgotLink} />
+        <OrangeButton label="SIGN IN" onPress={() => navigate('game')} />
+        <View style={styles.authActions}>
+          <Pressable onPress={() => navigate('signup')}><Text style={styles.authLink}>SIGN UP HERE</Text></Pressable>
+          <Text style={styles.authPipe}>|</Text>
+          <Pressable onPress={() => navigate('forgot')}><Text style={styles.authLink}>FORGOT PASSWORD</Text></Pressable>
         </View>
-        <Image source={art.terms} resizeMode="contain" style={styles.terms} />
-        <Text style={styles.version}>VERSION 1.6.0  |  © Copy of Kasikili Virtual Gaming cc  |  2025</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
-}
-
-function RegisterScreen({ onBack }: { onBack: () => void }) {
-  return (
-    <SafeAreaView style={styles.loginRoot}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.registerScroll} keyboardShouldPersistTaps="handled">
-        <Image source={art.title} resizeMode="contain" style={styles.loginTitle} />
-        <Image source={art.logo} resizeMode="contain" style={styles.registerLogo} />
-        <Text style={styles.formHeading}>CREATE AN ACCOUNT</Text>
-        {['MOBILE NUMBER', 'PASSWORD', 'CONFIRM PASSWORD', 'REFERRAL CODE (OPTIONAL)'].map((label) => (
-          <ImageBackground key={label} source={art.greenBox} resizeMode="stretch" style={styles.registerField}>
-            <Text style={styles.fieldLabel}>{label}</Text>
-            <TextInput secureTextEntry={label.includes('PASSWORD')} style={styles.fieldInput} placeholderTextColor="#bdd5c4" />
-          </ImageBackground>
-        ))}
-        <ArtButton source={art.orangeBox} label="SIGN UP" onPress={onBack} />
-        <Pressable onPress={onBack}><Text style={styles.backToLogin}>ALREADY REGISTERED?  LOGIN HERE</Text></Pressable>
+        <Text style={[styles.authLink, styles.contactAdmin]}>CLICK CONTACT ADMIN</Text>
+        <FooterLinks />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function NumberCell({ number, selected, onPress }: { number: number; selected: boolean; onPress: () => void }) {
-  const source = number === 0 ? art.greenCell : redNumbers.has(number) ? art.redCell : art.blackCell;
+function SignupScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const [adult, setAdult] = useState(false);
   return (
-    <Pressable onPress={onPress} style={[styles.numberCell, selected && styles.numberSelected]}>
-      <ImageBackground source={source} resizeMode="contain" style={styles.numberCellBackground}>
-        <Text style={styles.numberText}>{number}</Text>
-        <Image source={art.bet} resizeMode="contain" style={styles.betChip} />
-      </ImageBackground>
-    </Pressable>
+    <SafeAreaView style={styles.authRoot}>
+      <AppStatusBar />
+      <ScrollView contentContainerStyle={styles.signupContent} keyboardShouldPersistTaps="handled">
+        <AuthHeader compact />
+        <View style={styles.signupFields}>
+          <AuthField label="REFERRAL CODE" />
+          <AuthField label="REGION" />
+          <AuthField label="MOBILE NUMBER" />
+          <AuthField label="PASSWORD" secure />
+        </View>
+        <Pressable onPress={() => setAdult((value) => !value)} style={styles.consentBox}>{adult && <View style={styles.consentCheck} />}</Pressable>
+        <Text style={styles.consentText}>I HEREBY CONFIRM THAT I AM A CONSENTING ADULT ABOVE 18 YEARS OF AGE.</Text>
+        <OrangeButton label="SIGN UP" onPress={() => navigate('login')} />
+        <View style={styles.authActions}>
+          <Pressable onPress={() => navigate('login')}><Text style={styles.authLink}>LOGIN HERE</Text></Pressable>
+          <Text style={styles.authPipe}>|</Text>
+          <Pressable onPress={() => navigate('forgot')}><Text style={styles.authLink}>FORGOT PASSWORD</Text></Pressable>
+        </View>
+        <FooterLinks />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function GameScreen({
-  onLeaders,
-  onWallet,
-  onLogout,
-}: {
-  onLeaders: () => void;
-  onWallet: () => void;
-  onLogout: () => void;
-}) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [selected, setSelected] = useState<number | null>(7);
-  const [credits, setCredits] = useState(100);
-  const [win, setWin] = useState(0);
-  const [spinning, setSpinning] = useState(false);
+function ForgotScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  return (
+    <SafeAreaView style={styles.authRoot}>
+      <AppStatusBar />
+      <ScrollView contentContainerStyle={styles.loginContent} keyboardShouldPersistTaps="handled">
+        <AuthHeader />
+        <Text style={styles.forgotHeading}>FORGOT PASSWORD</Text>
+        <Text style={styles.forgotCopy}>Enter your registered mobile number and we will send you a password reset code.</Text>
+        <AuthField label="MOBILE NUMBER" />
+        <OrangeButton label="RESET PASSWORD" onPress={() => navigate('login')} />
+        <Pressable onPress={() => navigate('login')}><Text style={[styles.authLink, styles.forgotBack]}>BACK TO SIGN IN</Text></Pressable>
+        <FooterLinks />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function DigitDisplay({ value }: { value: number }) {
+  return (
+    <View style={styles.digitDisplay}>
+      {String(value).padStart(4, '0').split('').map((digit, index) => <Text key={`${digit}-${index}`} style={styles.digit}>{digit}</Text>)}
+    </View>
+  );
+}
+
+function WheelAssembly({ rotation, win, credit }: { rotation: Animated.AnimatedInterpolation<string>; win: number; credit: number }) {
+  return (
+    <View style={styles.wheelAssembly}>
+      <Image source={art.win} resizeMode="stretch" style={styles.winPanel} />
+      <Image source={art.credit} resizeMode="stretch" style={styles.creditPanel} />
+      <View style={styles.winDigits}><DigitDisplay value={win} /></View>
+      <View style={styles.creditDigits}><DigitDisplay value={credit} /></View>
+      <Animated.Image source={art.wheel} resizeMode="contain" style={[styles.gameWheel, { transform: [{ rotate: rotation }] }]} />
+    </View>
+  );
+}
+
+function BetNumber({ number }: { number: number }) {
+  const red = redNumbers.has(number);
+  return (
+    <View style={styles.numberTile}>
+      <View style={[styles.numberCircle, number === 0 ? styles.greenNumber : red ? styles.redNumber : styles.blackNumber]}>
+        <Text style={styles.numberLabel}>{number}</Text>
+      </View>
+      {['1', '2', '3', '4'].map((value, index) => (
+        <Pressable
+          accessibilityLabel={`Bet ${value} tokens on ${number}`}
+          key={value}
+          style={({ pressed }) => [styles.betSquare, index % 2 === 0 ? styles.betLeft : styles.betRight, index < 2 ? styles.betTop : styles.betBottom, pressed && styles.betPressed]}
+        >
+          <Text style={styles.betSquareText}>{value}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function GameMenu({ close, navigate }: { close: () => void; navigate: (screen: Screen) => void }) {
+  return (
+    <View style={styles.menuOverlay}>
+      <View style={styles.menuCard}>
+        <Pressable onPress={() => navigate('account')}><Text style={styles.menuItem}>CASH OUT</Text></Pressable>
+        <Pressable onPress={() => navigate('account')}><Text style={styles.menuItem}>BUY CREDITS</Text></Pressable>
+        <Pressable onPress={() => navigate('leaderboard')}><Text style={styles.menuItem}>LEADERBOARD</Text></Pressable>
+        <Pressable onPress={() => navigate('notifications')}><Text style={styles.menuItem}>NOTIFICATIONS</Text></Pressable>
+        <Pressable onPress={() => navigate('login')}><Text style={styles.menuItem}>SIGN OUT</Text></Pressable>
+      </View>
+      <View style={styles.menuClose}><Hamburger onPress={close} /></View>
+    </View>
+  );
+}
+
+function GameScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const { width } = useWindowDimensions();
+  const scale = Math.min(width / 375, 1.18);
   const spin = useRef(new Animated.Value(0)).current;
-  const rotation = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '1800deg'] });
-
-  const play = () => {
-    if (spinning || selected === null || credits < 5) return;
-    setSpinning(true);
-    setCredits((value) => value - 5);
-    setWin(0);
+  const [menu, setMenu] = useState(false);
+  const [credit, setCredit] = useState(0);
+  const [win, setWin] = useState(0);
+  const rotation = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '2160deg'] });
+  const start = () => {
     spin.setValue(0);
-    Animated.timing(spin, { toValue: 1, duration: 2300, useNativeDriver: true }).start(() => {
-      const winner = numbers[Math.floor(Math.random() * numbers.length)];
-      if (winner === selected) {
-        setCredits((value) => value + 50);
-        setWin(50);
-      }
-      setSpinning(false);
-    });
+    setCredit((value) => value + 1);
+    setWin(0);
+    Animated.timing(spin, { toValue: 1, duration: 2600, useNativeDriver: true }).start(() => setWin(Math.random() > 0.7 ? 10 : 0));
   };
-
   return (
     <SafeAreaView style={styles.gameRoot}>
-      <StatusBar style="light" />
-      <View style={styles.gameHeader}>
-        <Pressable onPress={() => setMenuOpen(true)} style={styles.menuButton}>
-          <Image source={art.menu} resizeMode="contain" style={styles.fill} />
-        </Pressable>
-        <Text style={styles.gameTitle}>KASIKILI BERGMANN ROULETTE</Text>
-        <View style={styles.menuButton} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.gameScroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.wheelZone}>
-          <Image source={art.gameLines} resizeMode="contain" style={styles.gameLines} />
-          <Animated.Image source={art.wheel} resizeMode="contain" style={[styles.wheel, { transform: [{ rotate: rotation }] }]} />
-        </View>
-        <View style={styles.scoreRow}>
-          <ImageBackground source={art.wheelCredit} resizeMode="contain" style={styles.scoreArt}>
-            <Text style={styles.scoreNumber}>{credits}</Text>
-          </ImageBackground>
-          <ImageBackground source={art.wheelWin} resizeMode="contain" style={styles.scoreArt}>
-            <Text style={styles.scoreNumber}>{win}</Text>
-          </ImageBackground>
-        </View>
-        <Image source={art.probability} resizeMode="contain" style={styles.probability} />
-        <Text style={styles.pickLabel}>SELECT A NUMBER</Text>
-        <View style={styles.numberGrid}>
-          {numbers.map((number) => (
-            <NumberCell key={number} number={number} selected={selected === number} onPress={() => setSelected(number)} />
-          ))}
-        </View>
-        <Text style={styles.stakeText}>BET: N$ 5.00</Text>
-        <View style={styles.playRow}>
-          <Pressable onPress={() => setSelected(null)} style={({ pressed }) => [styles.gameAction, pressed && styles.pressed]}>
-            <Image source={art.cancel} resizeMode="contain" style={styles.fill} />
-          </Pressable>
-          <Pressable onPress={play} style={({ pressed }) => [styles.gameAction, pressed && styles.pressed, spinning && styles.disabled]}>
-            <Image source={art.start} resizeMode="contain" style={styles.fill} />
-          </Pressable>
+      <AppStatusBar />
+      <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.gamePage}>
+        <View style={{ width: 375 * scale, height: 765 * scale }}>
+          <View style={{ width: 375, height: 765, transform: [{ scale }], transformOrigin: 'top left' } as never}>
+            <WheelAssembly rotation={rotation} win={win} credit={credit} />
+            <Text style={styles.gameHeading}>KASIKILI BERGMANN ROULETTE</Text>
+            <View style={styles.gameControls}>
+              <View style={styles.controlMenu}><Hamburger onPress={() => setMenu(true)} /></View>
+              <View style={styles.multiplierRow}>{multipliers.map((value) => <Text key={value} style={styles.multiplier}>{value}</Text>)}</View>
+              <View style={styles.actionRow}>
+                <Pressable style={styles.cancelButton} onPress={() => setWin(0)}><Text style={styles.gameButtonText}>CANCEL</Text></Pressable>
+                <Pressable style={styles.startButton} onPress={start}><Text style={[styles.gameButtonText, styles.startText]}>START</Text></Pressable>
+              </View>
+            </View>
+            <View style={styles.betTable}>
+              <View style={styles.tableRow}><View style={styles.numberTile} /><BetNumber number={0} /><View style={styles.numberTile} /></View>
+              {numberRows.map((row) => <View key={row.join('-')} style={styles.tableRow}>{row.map((number) => <BetNumber key={number} number={number} />)}</View>)}
+            </View>
+          </View>
         </View>
       </ScrollView>
-
-      <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.modalShade} onPress={() => setMenuOpen(false)}>
-          <ImageBackground source={art.menuBackdrop} resizeMode="stretch" style={styles.gameMenu}>
-            <Text style={styles.menuHeading}>MENU</Text>
-            <ArtButton source={art.orangeSmall} label="CASH OUT" onPress={() => { setMenuOpen(false); onWallet(); }} small />
-            <ArtButton source={art.violetBox} label="BUY CREDITS" onPress={() => setMenuOpen(false)} small />
-            <ArtButton source={art.orangeSmall} label="LEADERBOARD" onPress={() => { setMenuOpen(false); onLeaders(); }} small />
-            <ArtButton source={art.whiteBox} label="SIGN OUT" onPress={onLogout} small />
-            <Pressable onPress={() => setMenuOpen(false)}><Text style={styles.closeMenu}>CLOSE</Text></Pressable>
-          </ImageBackground>
-        </Pressable>
-      </Modal>
+      {menu && <GameMenu close={() => setMenu(false)} navigate={navigate} />}
     </SafeAreaView>
   );
 }
 
-function LeaderboardScreen({ onBack }: { onBack: () => void }) {
+function AccountScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const [amount, setAmount] = useState('0');
   return (
-    <SafeAreaView style={styles.greenRoot}>
-      <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.leaderScroll}>
-        <View style={styles.pageHeader}>
-          <View style={styles.closeIcon} />
-          <Text style={styles.pageTitle}>Leaderboard</Text>
-          <Pressable onPress={onBack}><Image source={art.close} style={styles.closeIcon} resizeMode="contain" /></Pressable>
+    <SafeAreaView style={styles.whiteRoot}>
+      <AppStatusBar />
+      <ScrollView contentContainerStyle={styles.accountPage}>
+        <View style={styles.whiteHeader}><BackIcon onPress={() => navigate('game')} /><Text style={styles.whiteHeaderTitle}>ACCOUNT</Text><View style={styles.backButton} /></View>
+        <View style={styles.accountInfo}>
+          <Text style={styles.infoLabel}>Mobile Number</Text><Text style={styles.infoValue}>0857430513</Text>
+          <Text style={styles.infoLabel}>Region</Text><Text style={styles.infoValue}>Khomas</Text>
+          <Text style={styles.infoLabel}>UID</Text><Text style={styles.infoValue}>U1405</Text>
         </View>
-        <View style={styles.crownBlock}>
-          <Image source={art.crown} resizeMode="contain" style={styles.crown} />
-          <Text style={styles.crownScore}>5000</Text>
-          <Text style={styles.crownCaption}>LEADERBOARD PRIZE</Text>
+        <View style={styles.sectionRule} />
+        <View style={styles.balanceRow}><Text style={styles.accountHeading}>BALANCE (NAD)</Text><Text style={styles.redAmount}>1300</Text></View>
+        <View style={styles.sectionRule} />
+        <Text style={styles.accountHeading}>CASH OUT</Text>
+        <TextInput value={amount} onChangeText={setAmount} keyboardType="numeric" style={styles.cashInput} />
+        <Pressable style={styles.cashButton}><Text style={styles.cashButtonText}>CASHOUT</Text></Pressable>
+        <Text style={styles.cashNote}>You will receive a mobile payment to your registered number.{`\n`}| Daily maximum is N$5000 - Minimum is N$100{`\n`}| Payouts every hour from 08:00 AM - 02:00 AM</Text>
+        <View style={styles.sectionRule} />
+        <View style={styles.referralRow}>
+          <Pressable style={styles.shareButton}><Text style={styles.shareText}>SHARE{`\n`}REFERRAL{`\n`}LINK</Text><View style={styles.shareCircle}><Text style={styles.shareGlyph}>↗</Text></View></Pressable>
+          <Text style={styles.referralCopy}>Receive 5 FREE Tokens for each{`\n`}time referral tops up their account,{`\n`}AS LONG as you have a CASH-IN{`\n`}transaction in your last 25{`\n`}transactions</Text>
         </View>
-        <View style={styles.leaderToolbar}>
-          <View><Text style={styles.sectionTitle}>Active Referrals</Text><Text style={styles.sectionSub}>Top 10 players this month</Text></View>
-          <Pressable><Image source={art.refresh} resizeMode="contain" style={styles.toolIcon} /></Pressable>
-          <Pressable><Image source={art.download} resizeMode="contain" style={styles.toolIcon} /></Pressable>
-        </View>
-        <View style={styles.tableHeader}><Text style={styles.rankHead}>#</Text><Text style={styles.mobileHead}>MOBILE NUMBER</Text><Text style={styles.scoreHead}>SCORE</Text></View>
-        {leaders.map(([rank, mobile, score, direction]) => (
-          <ImageBackground key={rank} source={art.leaderRow} resizeMode="stretch" style={styles.leaderRow}>
-            <Text style={styles.rank}>{rank}</Text>
-            <Text style={styles.maskedMobile}>{mobile}</Text>
-            <Text style={styles.percent}>{score}</Text>
-            <Image source={direction === 'up' ? art.arrowUp : art.arrowDown} resizeMode="contain" style={styles.arrow} />
-          </ImageBackground>
+        <View style={styles.sectionRule} />
+        <Text style={styles.mutedHeading}>AWAITING PAYOUT:</Text>
+        <View style={styles.balanceRow}><Text style={styles.accountHeading}>CREDITS ( N$)</Text><Text style={styles.redAmount}>850</Text></View>
+        <View style={styles.sectionRule} />
+        <Text style={styles.mutedHeading}>HISTORY : (Last fifteen (25) transactions only)</Text>
+        <View style={styles.historyHeader}><Text>ACTIVITY</Text><Text>DATE</Text><Text>DISTRIBUTOR</Text><Text>AMOUNT (N$)</Text></View>
+        {[
+          ['CASH IN', '02-FEB-22', 'GR456', '1200'], ['CASH OUT', '02-FEB-22', 'YT678', '300'], ['CASH OUT', '02-FEB-22', 'GP856', '900'],
+          ['CASH IN', '02-FEB-22', 'JYR456', '650'], ['REFERRAL', '02-FEB-22', 'H4R44', '2500'], ['CASH IN', '02-FEB-22', 'JYR456', '650'],
+        ].map((row, index) => <View key={index} style={styles.historyRow}>{row.map((cell) => <Text key={cell} style={styles.historyCell}>{cell}</Text>)}</View>)}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const notificationSettings = [
+  'SHOW NOTIFICATIONS', 'ALLOW FLOATING NOTIFICATION', 'ALLOW LOCK SCREEN NOTIFICATION', 'ALLOW LOCK SCREEN NOTIFICATION',
+  'ALLOW NOTIFICATION SOUNDS', 'ALLOW VIBRATIONS', 'ALL USERS ACTIVITY\nNOTIFICATIONS', 'MY ACCOUNT NOTIFICATIONS ONLY',
+];
+
+function NotificationsScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const [values, setValues] = useState(notificationSettings.map(() => true));
+  return (
+    <SafeAreaView style={styles.whiteRoot}>
+      <AppStatusBar />
+      <ScrollView contentContainerStyle={styles.notificationsPage}>
+        <View style={styles.whiteHeader}><BackIcon onPress={() => navigate('game')} /><Text style={styles.notificationTitle}>PUSH NOTIFICATIONS</Text><View style={styles.backButton} /></View>
+        <View style={styles.sectionRule} />
+        {notificationSettings.map((label, index) => (
+          <View key={`${label}-${index}`} style={[styles.notificationRow, index === 0 && styles.notificationPrimary, (index === 5 || index === 7) && styles.notificationSectionEnd]}>
+            <Text style={styles.notificationLabel}>{label}</Text>
+            <Switch value={values[index]} onValueChange={(next) => setValues((current) => current.map((value, i) => i === index ? next : value))} trackColor={{ false: '#d7d7d7', true: '#d7d7d7' }} thumbColor={values[index] ? '#10dd54' : '#a9adae'} />
+          </View>
         ))}
-        <Text style={styles.yourPosition}>YOUR POSITION</Text>
-        <ImageBackground source={art.playerRow} resizeMode="stretch" style={styles.playerPosition}>
-          <Text style={styles.rank}>24</Text>
-          <Image source={art.photo} style={styles.playerPhoto} />
-          <Text style={styles.maskedMobile}>26481 XXX 2026</Text>
-          <Text style={styles.percent}>31%</Text>
-        </ImageBackground>
-        <View style={styles.prizeInfo}>
-          <Text style={styles.prizeTitle}>PRIZE BREAKDOWN</Text>
-          <Text style={styles.prizeText}>1st 2000  •  2nd 1000  •  3rd 600</Text>
-          <Text style={styles.prizeText}>4th – 10th 200 each</Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function WalletScreen({ onBack }: { onBack: () => void }) {
+function Trend({ value }: { value: 'up' | 'down' | 'flat' }) {
+  return <Text style={[styles.trend, value === 'up' ? styles.trendUp : value === 'down' ? styles.trendDown : styles.trendFlat]}>{value === 'up' ? '▲' : value === 'down' ? '▼' : '−'}</Text>;
+}
+
+function LeaderInfo() {
   return (
-    <SafeAreaView style={styles.walletRoot}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.walletScroll}>
-        <View style={styles.walletHeader}>
-          <Image source={art.accountTitle} resizeMode="contain" style={styles.accountTitle} />
-          <Pressable onPress={onBack}><Image source={art.close} style={styles.walletClose} resizeMode="contain" /></Pressable>
+    <View style={styles.moveUpSection}>
+      <View style={styles.moveTitleRow}><View><Text style={styles.activeLabel}>Current Active Referrals</Text><View style={styles.activeBox}><Text style={styles.activeValue}>245</Text></View></View><View style={styles.verticalRule} /><Text style={styles.moveTitle}>HOW MOVE UP{`\n`}THE BOARD</Text></View>
+      <View style={styles.leaderRule} />
+      <Text style={styles.moveCopy}>To be featured in the TOP 10 of the Kasikili Leadership Board Challenge and stand a chance to winning cash prizes on a monthly basis, make sure to :{`\n\n`}  • Login and use the app daily{`\n`}  • Top up your account often{`\n`}  • Refer as many users using your referral link as you can{`\n\n`}The value of your Top ups count and the value of your referrals top ups as well.{`\n\n`}** NB - You ALSO get 5 Tokens each time your Referrals Top up for life!</Text>
+    </View>
+  );
+}
+
+function ExplainerModal({ visible, close }: { visible: boolean; close: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
+      <View style={styles.explainerShade}>
+        <ScrollView contentContainerStyle={styles.explainerScroll}>
+          <View style={styles.explainerCard}>
+            <Text style={styles.explainerHeading}>LEADERSHIP CHALLENGE</Text>
+            <Text style={styles.explainerText}>Top 10 players on the leader board are paid out a sum of cash directly to their PayPulse on their registered numbers.{`\n\n`}Factors listed on the bottom are taken into consideration and weighted by the system to calculate an overall percentage.{`\n\n`}The player with the highest percentage at the end of each month, wins the highest monthly price and the leaderboard resets again on the 1st of each month.</Text>
+            <Text style={styles.prizeNote}>Prize value is in N$ ( Namibian Dollars)</Text>
+            {[['Total Prize', '5000'], ['1st Place', '2000'], ['2nd Place', '1000'], ['3rd Place', '600'], ['4th – 10th Place', '200']].map(([label, value]) => <View key={label} style={styles.prizeRow}><Text style={styles.prizeLabel}>{label}</Text><View style={styles.prizeBox}><Text style={styles.prizeValue}>{value}</Text></View></View>)}
+            <Text style={styles.explainerText}>The value of the cash prizes will change and grow in accordance with the growth of the app, the players and the activity on the platform.{`\n\n`}Kasikili Virtual Gaming cc and its owners reserve the full right to determine any and all amounts of the Jackpot of the Leadership Challenge for its sustainability.{`\n\n`}All payments for winners shall be made between the 1st - 2nd of each month to their registered PayPulse numbers.{`\n\n`}All winners will be made public to all users via push notifications for transparency, with some elements of their numbers hidden for privacy.</Text>
+            <Pressable onPress={close} style={styles.closeExplainer}><Text style={styles.closeExplainerText}>CLOSE</Text></Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function LeaderboardScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const [info, setInfo] = useState(false);
+  return (
+    <SafeAreaView style={styles.leaderRoot}>
+      <AppStatusBar />
+      <ScrollView contentContainerStyle={styles.leaderPage} showsVerticalScrollIndicator={false}>
+        <View style={styles.leaderHeader}><BackIcon onPress={() => navigate('game')} light /><Text style={styles.leaderTitle}>Leaderboard</Text><Text style={styles.shareIcon}>⌯</Text></View>
+        <Pressable onPress={() => setInfo(true)} style={styles.crownWrap}><Image source={art.crown} resizeMode="contain" style={styles.leaderCrown} /><Text style={styles.bigPosition}>148</Text></Pressable>
+        <View style={styles.leaderTools}><View><Text style={styles.activeLabelLight}>Active Referrals</Text><View style={styles.activeBox}><Text style={styles.activeValue}>245</Text></View><Pressable style={styles.downloadButton}><Text style={styles.downloadText}>DOWNLOAD</Text></Pressable></View><Pressable style={styles.refreshButton}><Text style={styles.refreshText}>Refresh</Text></Pressable></View>
+        <Text style={styles.positionTitle}>YOUR POSITION</Text>
+        <View style={styles.leaderList}>
+          {leaders.map(([rank, mobile, score, trend, tone]) => <View key={rank} style={[styles.leaderRow, tone === 'gold' ? styles.rowGold : tone === 'white' ? styles.rowWhite : styles.rowDark]}><Trend value={trend} /><Text style={[styles.leaderRank, tone === 'dark' && styles.rowDarkText]}>{rank}</Text><Text style={[styles.leaderMobile, tone === 'dark' && styles.rowDarkText]}>{mobile}</Text><Text style={[styles.leaderScore, tone === 'dark' && styles.rowDarkText]}>{score}</Text></View>)}
         </View>
-        <Image source={art.mobileLabel} resizeMode="contain" style={styles.walletLabel} />
-        <ImageBackground source={art.accountInput} resizeMode="stretch" style={styles.walletField}><Text style={styles.walletValue}>264 81 000 2026</Text></ImageBackground>
-        <Image source={art.regionLabel} resizeMode="contain" style={styles.walletLabel} />
-        <ImageBackground source={art.accountInput} resizeMode="stretch" style={styles.walletField}><Text style={styles.walletValue}>NAMIBIA</Text></ImageBackground>
-        <Image source={art.balanceLabel} resizeMode="contain" style={styles.balanceLabel} />
-        <Text style={styles.balance}>N$ 100.00</Text>
-        <Image source={art.cashoutLabel} resizeMode="contain" style={styles.cashoutLabel} />
-        <Image source={art.bitcoinWallet} resizeMode="contain" style={styles.bitcoin} />
-        <ArtButton source={art.greenBox} label="REQUEST CASH OUT" onPress={() => undefined} />
-        <Image source={art.referral} resizeMode="contain" style={styles.referral} />
-        <Image source={art.historyTitle} resizeMode="contain" style={styles.historyTitle} />
-        <Image source={art.tableTitles} resizeMode="contain" style={styles.tableTitles} />
-        <Text style={styles.emptyHistory}>No transactions yet</Text>
+        <View style={styles.leaderRule} />
+        <View style={styles.youRow}><Trend value="up" /><Text style={styles.youRank}>148</Text><View style={styles.userCircle}><Text style={styles.userIcon}>♟</Text></View><Text style={styles.youText}>You</Text><Text style={styles.youScore}>2%</Text></View>
+        <LeaderInfo />
       </ScrollView>
+      <ExplainerModal visible={info} close={() => setInfo(false)} />
     </SafeAreaView>
   );
 }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('login');
-  if (screen === 'login') return <LoginScreen onLogin={() => setScreen('game')} onRegister={() => setScreen('register')} />;
-  if (screen === 'register') return <RegisterScreen onBack={() => setScreen('login')} />;
-  if (screen === 'leaders') return <LeaderboardScreen onBack={() => setScreen('game')} />;
-  if (screen === 'wallet') return <WalletScreen onBack={() => setScreen('game')} />;
-  return <GameScreen onLeaders={() => setScreen('leaders')} onWallet={() => setScreen('wallet')} onLogout={() => setScreen('login')} />;
+  if (screen === 'login') return <LoginScreen navigate={setScreen} />;
+  if (screen === 'signup') return <SignupScreen navigate={setScreen} />;
+  if (screen === 'forgot') return <ForgotScreen navigate={setScreen} />;
+  if (screen === 'game') return <GameScreen navigate={setScreen} />;
+  if (screen === 'account') return <AccountScreen navigate={setScreen} />;
+  if (screen === 'notifications') return <NotificationsScreen navigate={setScreen} />;
+  return <LeaderboardScreen navigate={setScreen} />;
 }
 
 const styles = StyleSheet.create({
-  fill: { width: '100%', height: '100%' },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
-  disabled: { opacity: 0.55 },
-  loginRoot: { flex: 1, backgroundColor: '#ffffff' },
-  loginScroll: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 25, paddingBottom: 26 },
-  loginTitle: { width: '92%', height: 34, marginBottom: 10 },
-  loginLogo: { width: 278, height: 282, marginTop: -6, marginBottom: -8 },
-  registerLogo: { width: 180, height: 182, marginVertical: 8 },
-  divider: { width: '96%', height: 3, marginBottom: 18 },
-  loginField: { width: '100%', height: 68, justifyContent: 'center', paddingHorizontal: 23, marginBottom: 12 },
-  registerField: { width: '100%', height: 63, justifyContent: 'center', paddingHorizontal: 22, marginBottom: 9 },
-  fieldLabel: { color: '#ffffff', fontSize: 10, fontWeight: '800', letterSpacing: 1.25, marginBottom: 1 },
-  fieldInput: { color: '#ffffff', fontSize: 17, fontWeight: '600', paddingVertical: 3 },
-  rememberRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', justifyContent: 'center', marginVertical: 4 },
-  rememberLabel: { color: '#526274', fontSize: 10, fontWeight: '800', letterSpacing: 0.6, marginRight: 8 },
-  choice: { paddingHorizontal: 7, paddingVertical: 5, borderRadius: 10 },
-  choiceActive: { backgroundColor: '#157649' },
-  choiceText: { color: '#708090', fontSize: 11, fontWeight: '900' },
-  choiceTextActive: { color: '#fff' },
-  choicePipe: { color: '#bcc5cd' },
-  artButton: { width: '100%', height: 64, alignItems: 'center', justifyContent: 'center', marginTop: 10, overflow: 'hidden', borderRadius: 30 },
-  artButtonBackground: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  artButtonSmall: { width: 245, height: 52, marginTop: 10 },
-  artButtonLabel: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 1.4, textShadowColor: 'rgba(0,0,0,.28)', textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
-  artButtonLabelSmall: { fontSize: 14 },
-  loginLinks: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
-  signupLink: { width: 118, height: 23 },
-  forgotLink: { width: 122, height: 23 },
-  terms: { width: 148, height: 27, marginTop: 18 },
-  version: { marginTop: 8, color: '#75808a', fontSize: 7.5, textAlign: 'center' },
-  registerScroll: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
-  formHeading: { color: '#17633f', fontSize: 18, fontWeight: '900', letterSpacing: 1.5, marginBottom: 14 },
-  backToLogin: { color: '#215f8d', fontSize: 11, fontWeight: '900', letterSpacing: 0.6, marginTop: 18 },
-  gameRoot: { flex: 1, backgroundColor: '#314d79' },
-  gameHeader: { height: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  menuButton: { width: 48, height: 48 },
-  gameTitle: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 0.6, textAlign: 'center', textShadowColor: '#17263d', textShadowRadius: 2 },
-  gameScroll: { alignItems: 'center', paddingBottom: 24 },
-  wheelZone: { width: 250, height: 250, alignItems: 'center', justifyContent: 'center' },
-  wheel: { width: 226, height: 226 },
-  gameLines: { position: 'absolute', width: 278, height: 278, opacity: 0.42 },
-  scoreRow: { flexDirection: 'row', marginTop: -3, gap: 14 },
-  scoreArt: { width: 126, height: 52, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 4 },
-  scoreNumber: { color: '#fff', fontSize: 18, fontWeight: '900' },
-  probability: { width: 300, height: 45, marginTop: 5 },
-  pickLabel: { color: '#fff', fontSize: 12, fontWeight: '900', letterSpacing: 1.5, marginVertical: 2 },
-  numberGrid: { width: 268, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
-  numberCell: { width: 61, height: 61, alignItems: 'center', justifyContent: 'center' },
-  numberCellBackground: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  numberSelected: { borderWidth: 3, borderColor: '#ffd94d', borderRadius: 31, transform: [{ scale: 1.05 }] },
-  numberText: { color: '#fff', fontSize: 19, fontWeight: '900', textShadowColor: '#000', textShadowRadius: 2 },
-  betChip: { position: 'absolute', right: -1, bottom: -2, width: 22, height: 22 },
-  stakeText: { color: '#fff', fontSize: 12, fontWeight: '900', marginTop: 9, letterSpacing: 1 },
-  playRow: { flexDirection: 'row', gap: 18, marginTop: 3 },
-  gameAction: { width: 137, height: 70 },
-  modalShade: { flex: 1, backgroundColor: 'rgba(5,15,20,.7)', alignItems: 'center', justifyContent: 'center' },
-  gameMenu: { width: 315, height: 430, alignItems: 'center', justifyContent: 'center', padding: 25 },
-  menuHeading: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: 3, marginBottom: 8 },
-  closeMenu: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 2, marginTop: 18 },
-  greenRoot: { flex: 1, backgroundColor: '#0a5738' },
-  leaderScroll: { padding: 18, paddingBottom: 35 },
-  pageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pageTitle: { color: '#fff', fontSize: 27, fontWeight: '800' },
-  closeIcon: { width: 34, height: 34 },
-  crownBlock: { alignItems: 'center', marginTop: 5 },
-  crown: { width: 120, height: 156 },
-  crownScore: { position: 'absolute', top: 82, color: '#fff', fontSize: 23, fontWeight: '900' },
-  crownCaption: { color: '#f5cf4a', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginTop: -7 },
-  leaderToolbar: { flexDirection: 'row', alignItems: 'center', gap: 9, marginVertical: 15 },
-  sectionTitle: { color: '#fff', fontSize: 19, fontWeight: '900' },
-  sectionSub: { color: '#a9d4be', fontSize: 10, marginTop: 2 },
-  toolIcon: { width: 34, height: 34 },
-  tableHeader: { flexDirection: 'row', paddingHorizontal: 15, marginBottom: 5 },
-  rankHead: { width: 30, color: '#9fd4b7', fontSize: 9, fontWeight: '900' },
-  mobileHead: { flex: 1, color: '#9fd4b7', fontSize: 9, fontWeight: '900' },
-  scoreHead: { width: 50, color: '#9fd4b7', fontSize: 9, fontWeight: '900' },
-  leaderRow: { height: 51, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, marginBottom: 4 },
-  rank: { width: 30, color: '#fff', fontSize: 14, fontWeight: '900' },
-  maskedMobile: { flex: 1, color: '#fff', fontSize: 13, fontWeight: '700' },
-  percent: { width: 42, color: '#fff', fontSize: 14, fontWeight: '900', textAlign: 'right' },
-  arrow: { width: 13, height: 13, marginLeft: 8 },
-  yourPosition: { color: '#f6d14b', fontSize: 10, fontWeight: '900', letterSpacing: 1.4, marginTop: 12, marginBottom: 5 },
-  playerPosition: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15 },
-  playerPhoto: { width: 30, height: 30, borderRadius: 15, marginRight: 8 },
-  prizeInfo: { borderWidth: 1, borderColor: '#4f9c79', padding: 14, marginTop: 18, borderRadius: 10, alignItems: 'center' },
-  prizeTitle: { color: '#f4cf4b', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-  prizeText: { color: '#fff', fontSize: 11, marginTop: 5 },
-  walletRoot: { flex: 1, backgroundColor: '#f6f6f3' },
-  walletScroll: { padding: 23, paddingBottom: 40, alignItems: 'center' },
-  walletHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  accountTitle: { width: 190, height: 52 },
-  walletClose: { width: 36, height: 36 },
-  walletLabel: { width: '100%', height: 23, alignSelf: 'flex-start', marginTop: 8 },
-  walletField: { width: '100%', height: 62, justifyContent: 'center', paddingHorizontal: 21 },
-  walletValue: { color: '#26513e', fontSize: 15, fontWeight: '800' },
-  balanceLabel: { width: 120, height: 30, marginTop: 18 },
-  balance: { color: '#0a653f', fontSize: 32, fontWeight: '900', marginTop: -2 },
-  cashoutLabel: { width: 170, height: 38, marginTop: 18 },
-  bitcoin: { width: 124, height: 92, marginVertical: 5 },
-  referral: { width: 210, height: 56, marginTop: 17 },
-  historyTitle: { width: 175, height: 45, marginTop: 18 },
-  tableTitles: { width: '100%', height: 40, marginTop: 6 },
-  emptyHistory: { color: '#809087', fontSize: 12, marginTop: 16 },
+  pressed: { opacity: 0.7 },
+  authRoot: { flex: 1, backgroundColor: '#fff' },
+  whiteRoot: { flex: 1, backgroundColor: '#fff' },
+  loginContent: { minHeight: 780, alignItems: 'center', paddingHorizontal: 21, paddingTop: 23, paddingBottom: 18 },
+  signupContent: { minHeight: 780, alignItems: 'center', paddingHorizontal: 21, paddingTop: 23, paddingBottom: 18 },
+  authTitle: { fontSize: 14, fontWeight: '900', color: '#070707', marginBottom: 23 },
+  authRule: { alignSelf: 'stretch', height: 1, backgroundColor: '#777', marginBottom: 10 },
+  authWheel: { width: 184, height: 184, marginTop: 38 },
+  authWheelCompact: { width: 176, height: 176, marginTop: 2 },
+  loginFields: { width: '100%', gap: 24, marginTop: 62 },
+  signupFields: { width: '100%', gap: 18, marginTop: 1 },
+  authField: { width: '100%', height: 59, borderRadius: 20, backgroundColor: '#9bd3a3', color: '#fff', textAlign: 'center', fontSize: 14, paddingHorizontal: 18 },
+  rememberRow: { height: 39, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  rememberText: { fontSize: 7, fontWeight: '800', color: '#111' },
+  miniSwitch: { transform: [{ scaleX: 0.58 }, { scaleY: 0.58 }], marginHorizontal: -8 },
+  orangeButton: { width: '88%', height: 48, borderRadius: 10, backgroundColor: '#f88b05', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 3, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
+  orangeButtonText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  authActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 11 },
+  authLink: { color: '#006b8a', fontSize: 10 },
+  authPipe: { marginHorizontal: 7, color: '#555' },
+  contactAdmin: { fontSize: 12, fontWeight: '700', marginTop: 12 },
+  termsRow: { flexDirection: 'row', marginTop: 42 },
+  version: { fontSize: 6.5, fontWeight: '600', marginTop: 24 },
+  consentBox: { width: 29, height: 18, borderWidth: 1, borderColor: '#111', backgroundColor: '#ddd', marginTop: 11, alignItems: 'center', justifyContent: 'center' },
+  consentCheck: { width: 21, height: 12, backgroundColor: '#18d954' },
+  consentText: { color: '#00698a', fontSize: 8, marginVertical: 7 },
+  forgotHeading: { fontSize: 20, fontWeight: '900', marginTop: 37 },
+  forgotCopy: { width: '88%', textAlign: 'center', color: '#006b8a', fontSize: 12, lineHeight: 18, marginVertical: 17 },
+  forgotBack: { marginTop: 16, fontWeight: '700' },
+  gameRoot: { flex: 1, backgroundColor: '#003f27' },
+  gamePage: { alignItems: 'center', minHeight: 770 },
+  wheelAssembly: { width: 375, height: 182, position: 'relative', overflow: 'hidden' },
+  winPanel: { position: 'absolute', left: 4, top: 15, width: 177, height: 194 },
+  creditPanel: { position: 'absolute', right: 4, top: 15, width: 177, height: 194 },
+  gameWheel: { position: 'absolute', left: 92, top: 0, width: 191, height: 191 },
+  winDigits: { position: 'absolute', left: 16, top: 76 },
+  creditDigits: { position: 'absolute', right: 16, top: 76 },
+  digitDisplay: { width: 69, height: 25, borderWidth: 3, borderColor: '#ff1720', backgroundColor: '#b21419', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly' },
+  digit: { color: '#fff', fontSize: 17, fontWeight: '900', fontFamily: 'monospace' },
+  gameHeading: { color: '#fff', fontFamily: 'serif', textDecorationLine: 'underline', fontSize: 16, textAlign: 'center', height: 25 },
+  gameControls: { height: 78, position: 'relative' },
+  controlMenu: { position: 'absolute', left: 6, top: -1 },
+  hamburger: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ced900', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  hamburgerLine: { width: 22, height: 3, borderRadius: 2, backgroundColor: '#183d27' },
+  multiplierRow: { flexDirection: 'row', justifyContent: 'center' },
+  multiplier: { height: 39, minWidth: 41, paddingHorizontal: 8, borderWidth: 1, borderColor: '#fff', backgroundColor: '#9d1014', color: '#fff', fontFamily: 'serif', fontSize: 17, textAlign: 'center', textAlignVertical: 'center' },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 88, marginTop: 5 },
+  cancelButton: { width: 58, height: 30, borderRadius: 6, backgroundColor: '#ced900', alignItems: 'center', justifyContent: 'center' },
+  startButton: { width: 58, height: 30, borderRadius: 6, backgroundColor: '#9c1014', alignItems: 'center', justifyContent: 'center' },
+  gameButtonText: { fontFamily: 'serif', color: '#050505', fontSize: 11 },
+  startText: { color: '#fff' },
+  betTable: { width: 355, height: 482, borderWidth: 1, borderColor: '#507a67', alignSelf: 'center' },
+  tableRow: { flexDirection: 'row', height: 96 },
+  numberTile: { flex: 1, height: 96, borderRightWidth: 1, borderBottomWidth: 1, borderColor: '#507a67', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  numberCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  greenNumber: { backgroundColor: '#0f7a46' }, redNumber: { backgroundColor: '#b8141b' }, blackNumber: { backgroundColor: '#020202' },
+  numberLabel: { color: '#fff', fontSize: 27, fontWeight: '800' },
+  betSquare: { position: 'absolute', width: 40, height: 32, borderRadius: 4, backgroundColor: '#ccd900', alignItems: 'center', justifyContent: 'center' },
+  betLeft: { left: 8 }, betRight: { right: 8 }, betTop: { top: 8 }, betBottom: { bottom: 8 }, betPressed: { backgroundColor: '#fff83a' },
+  betSquareText: { fontSize: 14, fontWeight: '800', color: '#050505' },
+  menuOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,35,21,0.16)', alignItems: 'center', justifyContent: 'center' },
+  menuCard: { width: 283, paddingVertical: 23, borderRadius: 25, backgroundColor: 'rgba(89,180,91,0.9)', alignItems: 'center', gap: 12 },
+  menuItem: { color: '#fff', fontFamily: 'serif', fontWeight: '900', fontSize: 26, lineHeight: 45, textShadowColor: 'rgba(0,0,0,.18)', textShadowRadius: 2 },
+  menuClose: { position: 'absolute', left: 7, top: 203 },
+  backButton: { width: 45, height: 45, position: 'relative' },
+  backDoor: { position: 'absolute', right: 1, top: 6, width: 25, height: 31, borderWidth: 2, borderColor: '#ef383d', borderRadius: 3 },
+  backDoorLight: { borderColor: '#ef383d' },
+  backArrow: { position: 'absolute', left: 0, top: 5, color: '#ef383d', fontSize: 30 },
+  backArrowLight: { color: '#ef383d' },
+  whiteHeader: { width: '100%', height: 70, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
+  whiteHeaderTitle: { fontSize: 26, fontWeight: '900' },
+  accountPage: { paddingHorizontal: 21, paddingBottom: 30 },
+  accountInfo: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap' },
+  infoLabel: { width: '40%', fontSize: 17, lineHeight: 25 }, infoValue: { width: '60%', fontSize: 17, lineHeight: 25 },
+  sectionRule: { height: 1, backgroundColor: '#5f5f5f', width: '100%', marginVertical: 6 },
+  balanceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  accountHeading: { fontSize: 23, color: '#111' }, redAmount: { color: '#e33d42', fontSize: 29, fontWeight: '800' },
+  cashInput: { width: '92%', alignSelf: 'center', height: 42, borderWidth: 1, borderRadius: 5, backgroundColor: '#fafafa', textAlign: 'center', color: '#e33d42', fontSize: 24, fontWeight: '700', shadowColor: '#000', shadowOpacity: .25, shadowRadius: 2, shadowOffset: { width: 0, height: 2 }, elevation: 3, marginVertical: 7 },
+  cashButton: { width: '62%', height: 37, alignSelf: 'center', backgroundColor: '#9bd3a3', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  cashButtonText: { fontWeight: '900', fontSize: 12 }, cashNote: { textAlign: 'center', fontSize: 10, color: '#555', lineHeight: 14, marginVertical: 6 },
+  referralRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  shareButton: { width: 148, height: 62, borderRadius: 30, backgroundColor: '#eee', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: .2, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  shareText: { fontSize: 10, fontWeight: '800', textAlign: 'center', marginRight: 9 }, shareCircle: { width: 43, height: 43, borderRadius: 22, backgroundColor: '#124b85', alignItems: 'center', justifyContent: 'center', borderWidth: 5, borderColor: '#fff' }, shareGlyph: { color: '#fff', fontSize: 24 },
+  referralCopy: { fontSize: 10, fontWeight: '700', textAlign: 'center' }, mutedHeading: { fontSize: 13, color: '#606269', fontWeight: '900' },
+  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, paddingVertical: 5 },
+  historyRow: { flexDirection: 'row', paddingVertical: 3 }, historyCell: { width: '25%', fontSize: 10, fontWeight: '700', color: '#51545a' },
+  notificationsPage: { paddingHorizontal: 21, paddingBottom: 40 }, notificationTitle: { fontSize: 26, fontWeight: '900' },
+  notificationRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 },
+  notificationPrimary: { minHeight: 96, borderBottomWidth: 1, borderColor: '#666' }, notificationSectionEnd: { borderBottomWidth: 1, borderColor: '#666', paddingBottom: 38, marginBottom: 18 },
+  notificationLabel: { maxWidth: '75%', fontSize: 13, fontWeight: '900' },
+  leaderRoot: { flex: 1, backgroundColor: '#0a472f' }, leaderPage: { paddingHorizontal: 17, paddingBottom: 30 },
+  leaderHeader: { height: 80, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, leaderTitle: { color: '#fff', fontSize: 23, fontWeight: '600' }, shareIcon: { color: '#fff', fontSize: 35 },
+  crownWrap: { alignSelf: 'center', width: 238, height: 307, alignItems: 'center' }, leaderCrown: { width: 238, height: 307 }, bigPosition: { position: 'absolute', top: 145, color: '#000', fontSize: 73, fontWeight: '900', transform: [{ rotate: '-5deg' }] },
+  leaderTools: { minHeight: 113, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  activeLabelLight: { color: '#fff', fontSize: 11 }, activeLabel: { color: '#fff', fontSize: 9 }, activeBox: { width: 96, height: 42, borderRadius: 10, backgroundColor: '#d4c5e1', borderWidth: 5, borderColor: '#ffc62c', alignItems: 'center', justifyContent: 'center' }, activeValue: { fontSize: 14, fontWeight: '900' },
+  downloadButton: { marginTop: 11, width: 91, height: 32, backgroundColor: '#ffc62c', borderRadius: 5, alignItems: 'center', justifyContent: 'center' }, downloadText: { fontSize: 10, fontWeight: '900' },
+  refreshButton: { width: 88, height: 32, backgroundColor: '#ffc62c', borderRadius: 5, alignItems: 'center', justifyContent: 'center' }, refreshText: { fontWeight: '900' },
+  positionTitle: { color: '#fff', fontSize: 18, textAlign: 'center', marginVertical: 8 }, leaderList: { gap: 14 },
+  leaderRow: { height: 65, borderRadius: 20, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }, rowGold: { backgroundColor: '#ffc62c' }, rowWhite: { backgroundColor: '#f4f4f4' }, rowDark: { backgroundColor: '#315846' },
+  rowDarkText: { color: '#fff' }, trend: { width: 25, fontSize: 16 }, trendUp: { color: '#21e981' }, trendDown: { color: '#f33d45' }, trendFlat: { color: '#f52ec3' },
+  leaderRank: { width: 31, fontSize: 14 }, leaderMobile: { flex: 1, fontSize: 16, fontWeight: '700' }, leaderScore: { fontSize: 28, fontWeight: '900' },
+  leaderRule: { height: 1, backgroundColor: '#fff', marginVertical: 16 }, youRow: { height: 65, borderRadius: 33, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
+  youRank: { color: '#ff20c4', width: 40 }, userCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#36244e', alignItems: 'center', justifyContent: 'center' }, userIcon: { color: '#fff', fontSize: 22 }, youText: { color: '#ff20c4', fontSize: 17, marginLeft: 19, flex: 1 }, youScore: { color: '#ff20c4', fontSize: 28, fontWeight: '900' },
+  moveUpSection: { marginTop: 13 }, moveTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, verticalRule: { width: 1, height: 50, backgroundColor: '#fff' }, moveTitle: { color: '#fff', fontSize: 27, lineHeight: 29, textAlign: 'center' }, moveCopy: { color: '#fff', fontSize: 12.5, lineHeight: 15 },
+  explainerShade: { flex: 1, backgroundColor: 'rgba(3,52,34,.65)' }, explainerScroll: { paddingHorizontal: 28, paddingVertical: 150 }, explainerCard: { borderRadius: 22, backgroundColor: 'rgba(54,135,65,.94)', paddingHorizontal: 18, paddingVertical: 70, alignItems: 'center' },
+  explainerHeading: { color: '#fff', fontFamily: 'serif', fontWeight: '900', fontSize: 18, marginBottom: 24 }, explainerText: { color: '#fff', fontSize: 15, lineHeight: 21, textAlign: 'center' }, prizeNote: { color: '#fff', fontFamily: 'serif', fontWeight: '900', fontSize: 15, marginVertical: 18 },
+  prizeRow: { width: '100%', minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, prizeLabel: { color: '#fff', fontFamily: 'serif', fontWeight: '900', fontSize: 18, textAlign: 'center', flex: 1 }, prizeBox: { width: 126, height: 49, borderRadius: 12, backgroundColor: '#ddd', alignItems: 'center', justifyContent: 'center' }, prizeValue: { fontSize: 25, fontWeight: '900' },
+  closeExplainer: { marginTop: 30, width: 130, height: 42, borderRadius: 10, backgroundColor: '#ffc62c', alignItems: 'center', justifyContent: 'center' }, closeExplainerText: { fontWeight: '900' },
 });
