@@ -41,6 +41,10 @@ PatchOfflineConnection(module);
 PatchOfflineLogin(module);
 PatchLoginButton(module);
 PatchLogoutButton(module);
+PatchGuardedTableInput(module);
+PatchImmediateCancel(module);
+PatchLocalRoundSettlement(module);
+PatchLocalCashout(module);
 PatchProbability(module);
 PatchNoOp(module, "APIManager", "CallFcmAPI");
 PatchJsonApi(
@@ -70,6 +74,7 @@ PatchStringIterator(module, "Infrastructure.UserGateway/<VerifyOtp>d__12", "Succ
 PatchStringIterator(module, "Infrastructure.UserGateway/<ChangePassword>d__14", "Successfully");
 PatchStringIterator(module, "Infrastructure.UserGateway/<RegisterOtp>d__16", "Successfully");
 PatchStringIterator(module, "Infrastructure.GameGateway/<GetAllUserBalance>d__2", "{\"total_available\":500}");
+PatchStringIterator(module, "Infrastructure.DistributorsGateway/<DistributorsList>d__2", "[{\"name\":\"Offline Distributor\",\"region\":\"KHOMAS\",\"mobile_number\":\"081 000 0000\",\"balance\":500}]");
 
 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
 module.Write(output);
@@ -333,6 +338,215 @@ static void PatchLogoutButton(ModuleDefinition module)
     il.Append(il.Create(OpCodes.Call, loadScene));
     il.Append(il.Create(OpCodes.Ret));
     Console.WriteLine("Patched SIGN OUT to load the Unity Menu scene directly.");
+}
+
+static void PatchGuardedTableInput(ModuleDefinition module)
+{
+    var type = FindType(module, "Components.TableButtonInput");
+    var method = type.Methods.Single(m => m.Name == "Click");
+    var rouletteManager = FindType(module, "ViewModel.RouletteManager");
+    var tableManager = FindType(module, "ViewModel.TableManager");
+    var cashManager = FindType(module, "ViewModel.CashManager");
+    var getBool = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "get_Value" && m.DeclaringType.FullName.Contains("System.Boolean", StringComparison.Ordinal));
+    var setBool = FindMethod(module, "Commands.RouletteStateCmd", "Play")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "set_Value" && m.DeclaringType.FullName.Contains("System.Boolean", StringComparison.Ordinal));
+    var getCredit = FindMethod(module, "Components.CloseMenuInput", "OnClick")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "get_Value" && m.DeclaringType.FullName.Contains("System.Int32", StringComparison.Ordinal));
+    var getTime = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "get_time");
+    var clickButton = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "ClickButton");
+    var execute = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "Execute");
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    var ret = il.Create(OpCodes.Ret);
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "tableButton")));
+    il.Append(il.Create(OpCodes.Brfalse, ret));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "rouletteManager")));
+    il.Append(il.Create(OpCodes.Ldfld, rouletteManager.Fields.Single(f => f.Name == "tableActive")));
+    il.Append(il.Create(OpCodes.Callvirt, getBool));
+    il.Append(il.Create(OpCodes.Brfalse, ret));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "tableManager")));
+    il.Append(il.Create(OpCodes.Ldfld, tableManager.Fields.Single(f => f.Name == "cashManager")));
+    il.Append(il.Create(OpCodes.Ldfld, cashManager.Fields.Single(f => f.Name == "currentCredit")));
+    il.Append(il.Create(OpCodes.Callvirt, getCredit));
+    il.Append(il.Create(OpCodes.Ldc_I4_0));
+    il.Append(il.Create(OpCodes.Ble, ret));
+    il.Append(il.Create(OpCodes.Call, getTime));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "_lastClickTime")));
+    il.Append(il.Create(OpCodes.Sub));
+    il.Append(il.Create(OpCodes.Ldc_R4, 0.15f));
+    il.Append(il.Create(OpCodes.Ble_Un, ret));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Call, getTime));
+    il.Append(il.Create(OpCodes.Stfld, type.Fields.Single(f => f.Name == "_lastClickTime")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "rouletteManager")));
+    il.Append(il.Create(OpCodes.Ldfld, rouletteManager.Fields.Single(f => f.Name == "gameActive")));
+    il.Append(il.Create(OpCodes.Ldc_I4_1));
+    il.Append(il.Create(OpCodes.Callvirt, setBool));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "tableCmdFactory")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "tableManager")));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "tableButton")));
+    il.Append(il.Create(OpCodes.Callvirt, clickButton));
+    il.Append(il.Create(OpCodes.Callvirt, execute));
+    il.Append(ret);
+    Console.WriteLine("Patched selectors to require ready table and positive local credit.");
+}
+
+static void PatchImmediateCancel(ModuleDefinition module)
+{
+    var type = FindType(module, "Components.RoundCancelInput");
+    var method = type.Methods.Single(m => m.Name == "Click");
+    var cancelRound = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "CancelRound");
+    var execute = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "Execute");
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "gameCmdFactory")));
+    foreach (var fieldName in new[] { "rouletteManager", "roundManager", "tableManager" })
+    {
+        il.Append(il.Create(OpCodes.Ldarg_0));
+        il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == fieldName)));
+    }
+    il.Append(il.Create(OpCodes.Callvirt, cancelRound));
+    il.Append(il.Create(OpCodes.Callvirt, execute));
+    il.Append(il.Create(OpCodes.Ret));
+    Console.WriteLine("Patched CANCEL to respond immediately while retaining command state guards.");
+}
+
+static void PatchLocalRoundSettlement(ModuleDefinition module)
+{
+    var paymentType = FindType(module, "Commands.PaymentRoundCmd");
+    var postBalance = paymentType.Methods.Single(m => m.Name == "PostBalance");
+    var tableManager = FindType(module, "ViewModel.TableManager");
+    var cashManager = FindType(module, "ViewModel.CashManager");
+    var setCredit = FindMethod(module, "ViewModel.CashManager", "ResetMoney")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "set_Value" && m.DeclaringType.FullName.Contains("System.Int32", StringComparison.Ordinal));
+    var paymentIl = postBalance.Body.GetILProcessor();
+    ResetBody(postBalance);
+    paymentIl.Append(paymentIl.Create(OpCodes.Ldarg_0));
+    paymentIl.Append(paymentIl.Create(OpCodes.Ldfld, paymentType.Fields.Single(f => f.Name == "_tableManager")));
+    paymentIl.Append(paymentIl.Create(OpCodes.Ldfld, tableManager.Fields.Single(f => f.Name == "cashManager")));
+    paymentIl.Append(paymentIl.Create(OpCodes.Ldfld, cashManager.Fields.Single(f => f.Name == "currentCredit")));
+    paymentIl.Append(paymentIl.Create(OpCodes.Ldarg_1));
+    paymentIl.Append(paymentIl.Create(OpCodes.Ldarg_2));
+    paymentIl.Append(paymentIl.Create(OpCodes.Add));
+    paymentIl.Append(paymentIl.Create(OpCodes.Callvirt, setCredit));
+    paymentIl.Append(paymentIl.Create(OpCodes.Ret));
+
+    var resetType = FindType(module, "Commands.ResetRoundCmd");
+    var executeReset = resetType.Methods.Single(m => m.Name == "Execute");
+    var resetSequence = resetType.Methods.Single(m => m.Name == "ResetSequence");
+    var delegateTarget = executeReset.Body.Instructions.First(i => i.OpCode == OpCodes.Ldftn
+        && i.Operand is MethodReference called && called.Name == "ResetRound");
+    delegateTarget.Operand = resetSequence;
+    Console.WriteLine("Patched local win/loss settlement and reset to preserve the updated wallet.");
+}
+
+static void PatchLocalCashout(ModuleDefinition module)
+{
+    var type = FindType(module, "Components.CashoutPlayerInput");
+    var method = type.Methods.Single(m => m.Name == "OnClick");
+    var gameManager = FindType(module, "ViewModel.GameManager");
+    var errorManager = FindType(module, "ViewModel.ErrorManager");
+    var tableManager = FindType(module, "ViewModel.TableManager");
+    var cashManager = FindType(module, "ViewModel.CashManager");
+    var getText = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "get_text");
+    var setText = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "set_text");
+    var toInt = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>().First(m => m.Name == "ToInt32");
+    var getCredit = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "get_Value" && m.DeclaringType.FullName.Contains("System.Int32", StringComparison.Ordinal));
+    var setCredit = FindMethod(module, "ViewModel.CashManager", "ResetMoney")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "set_Value" && m.DeclaringType.FullName.Contains("System.Int32", StringComparison.Ordinal));
+    var onAlert = method.Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "OnNext" && m.DeclaringType.FullName.Contains("System.String", StringComparison.Ordinal));
+    var onSuccess = FindMethod(module, "Commands.PostUserCashoutCmd", "Success")
+        .Body.Instructions.Select(i => i.Operand).OfType<MethodReference>()
+        .First(m => m.Name == "OnNext" && m.DeclaringType.FullName.Contains("System.Boolean", StringComparison.Ordinal));
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    method.Body.InitLocals = true;
+    var amount = new VariableDefinition(module.TypeSystem.Int32);
+    method.Body.Variables.Add(amount);
+    var parse = il.Create(OpCodes.Nop);
+    var invalid = il.Create(OpCodes.Nop);
+    var ret = il.Create(OpCodes.Ret);
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "inputField")));
+    il.Append(il.Create(OpCodes.Callvirt, getText));
+    il.Append(il.Create(OpCodes.Call, module.ImportReference(typeof(string).GetMethod(nameof(string.IsNullOrEmpty), new[] { typeof(string) })!)));
+    il.Append(il.Create(OpCodes.Brfalse, parse));
+    EmitAlert(il, type, gameManager, errorManager, onAlert, "Amount is empty. Please enter amount.");
+    il.Append(il.Create(OpCodes.Br, ret));
+
+    il.Append(parse);
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "inputField")));
+    il.Append(il.Create(OpCodes.Callvirt, getText));
+    il.Append(il.Create(OpCodes.Call, toInt));
+    il.Append(il.Create(OpCodes.Stloc, amount));
+    il.Append(il.Create(OpCodes.Ldloc, amount));
+    il.Append(il.Create(OpCodes.Ldc_I4, 100));
+    il.Append(il.Create(OpCodes.Blt, invalid));
+    il.Append(il.Create(OpCodes.Ldloc, amount));
+    EmitLoadCredit(il, type, tableManager, cashManager, getCredit);
+    il.Append(il.Create(OpCodes.Bgt, invalid));
+
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "tableManager")));
+    il.Append(il.Create(OpCodes.Ldfld, tableManager.Fields.Single(f => f.Name == "cashManager")));
+    il.Append(il.Create(OpCodes.Ldfld, cashManager.Fields.Single(f => f.Name == "currentCredit")));
+    EmitLoadCredit(il, type, tableManager, cashManager, getCredit);
+    il.Append(il.Create(OpCodes.Ldloc, amount));
+    il.Append(il.Create(OpCodes.Sub));
+    il.Append(il.Create(OpCodes.Callvirt, setCredit));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "gameManager")));
+    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "OnCashoutSuccess")));
+    il.Append(il.Create(OpCodes.Ldc_I4_1));
+    il.Append(il.Create(OpCodes.Callvirt, onSuccess));
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, type.Fields.Single(f => f.Name == "inputField")));
+    il.Append(il.Create(OpCodes.Ldstr, ""));
+    il.Append(il.Create(OpCodes.Callvirt, setText));
+    il.Append(il.Create(OpCodes.Br, ret));
+
+    il.Append(invalid);
+    EmitAlert(il, type, gameManager, errorManager, onAlert, "Amount entered either exceeds or is below the specified limit.");
+    il.Append(ret);
+    Console.WriteLine("Patched cashout as a local wallet deduction with existing validation and success UI.");
+}
+
+static void EmitLoadCredit(ILProcessor il, TypeDefinition owner, TypeDefinition tableManager, TypeDefinition cashManager, MethodReference getCredit)
+{
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, owner.Fields.Single(f => f.Name == "tableManager")));
+    il.Append(il.Create(OpCodes.Ldfld, tableManager.Fields.Single(f => f.Name == "cashManager")));
+    il.Append(il.Create(OpCodes.Ldfld, cashManager.Fields.Single(f => f.Name == "currentCredit")));
+    il.Append(il.Create(OpCodes.Callvirt, getCredit));
+}
+
+static void EmitAlert(ILProcessor il, TypeDefinition owner, TypeDefinition gameManager, TypeDefinition errorManager, MethodReference onAlert, string message)
+{
+    il.Append(il.Create(OpCodes.Ldarg_0));
+    il.Append(il.Create(OpCodes.Ldfld, owner.Fields.Single(f => f.Name == "gameManager")));
+    il.Append(il.Create(OpCodes.Ldfld, gameManager.Fields.Single(f => f.Name == "errorManager")));
+    il.Append(il.Create(OpCodes.Ldfld, errorManager.Fields.Single(f => f.Name == "OnAlertError")));
+    il.Append(il.Create(OpCodes.Ldstr, message));
+    il.Append(il.Create(OpCodes.Callvirt, onAlert));
 }
 
 static void PatchLeaderboardOpen(ModuleDefinition module)

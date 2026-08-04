@@ -21,6 +21,8 @@ The patch:
 - opens leaderboard synchronously with local data and signs out directly to login;
 - replaces only the retired startup/balance and connectivity confirmations with
   the local N$500 wallet and immediate offline connection success;
+- settles wins and losses into the local wallet, preserves that balance during
+  reset, clears selection lights, and re-enables the guarded table lifecycle;
 - supplies local probability, balance, leaderboard and prize data; and
 - disables the obsolete Firebase registration call.
 
