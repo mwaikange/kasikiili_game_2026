@@ -13,6 +13,9 @@ This is the canonical register of every server dependency bypassed while revivin
 the original Kasikili Unity APK. Update it whenever a bypass is added, changed or
 replaced by the new backend.
 
+The new platform reception and wallet routing are documented in
+`docs/GAME_CENTRE_ARCHITECTURE.md`.
+
 ## Status meanings
 
 - **Bypassed:** the original backend behavior is not currently used.
@@ -299,6 +302,62 @@ proper source rebuild.
   `RNGCryptoServiceProvider`; this was original APK behavior, not a recovery bypass.
   For production real-money play, the outcome must move to the server as part of
   round authorization and settlement.
+
+## Game Centre recovery fixtures
+
+### GC-001 — Game catalog
+
+- **Intended behavior:** The backend publishes the games available to the user,
+  their launch targets, icons, maintenance state and wallet identifiers.
+- **Current fixture:** Kasikili Roulette is enabled; My Lucky 6 Deluxe and Kasikili
+  Predictions are visible as `COMING SOON`.
+- **Why it exists:** The app is now a platform reception rather than a single-game
+  shell, so game availability must change without rebuilding the entire app.
+- **Restore with backend:** Return a signed/versioned catalog filtered by region,
+  eligibility and client version.
+
+### GC-002 — Main Balance and per-game wallets
+
+- **Intended behavior:** The backend ledger owns one Main Balance and a wallet for
+  each game.
+- **Current fixture:** Main Balance starts locally at N$500 and game balances are
+  local test values.
+- **Why it exists:** Gameplay funds must be isolated per game while cash-out stays
+  centralized at platform level.
+- **Restore with backend:** Return an authenticated versioned wallet summary from
+  the ledger. The client must not create, edit or settle authoritative money.
+
+### GC-003 — Token transfers
+
+- **Intended behavior:** Users move funds from a game wallet to Main Balance, or
+  from Main Balance to a game wallet.
+- **Current fixture:** The rule is enforced locally; direct game-to-game movement
+  is rejected.
+- **Why it exists:** Main Balance is the auditable hub between games and the only
+  cash-out source.
+- **Restore with backend:** Use atomic double-entry ledger movements and an
+  idempotency key per transfer request.
+
+### GC-004 — Platform cash-out
+
+- **Intended behavior:** Cash-out creates a payout request against Main Balance.
+- **Current fixture:** It deducts local Main Balance and confirms a simulated
+  request. No payment occurs.
+- **Why it exists:** Individual games must not independently pay users or bypass
+  platform payout controls.
+- **Restore with backend:** Reserve Main Balance, create an auditable payout,
+  process it through the approved provider and reconcile final status.
+
+### GC-005 — Referral rewards
+
+- **Intended behavior:** Registration accepts an optional referral code and the
+  backend awards rewards from verified qualifying activity.
+- **Current fixture:** The existing optional signup field is retained; rewards
+  display a local referral code only.
+- **Why it exists:** Referral attribution and reward eligibility must be shared by
+  all games and protected against self-reporting or replay.
+- **Restore with backend:** Bind attribution once during account creation, expose
+  referral history and post ledger rewards only after server verification.
 
 ## Backend rebuild checklist
 

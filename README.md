@@ -1,6 +1,7 @@
 # Kasikili Game Recovery 2026
 
-This repository is the recovery baseline for **Kasikili Bergmann Roulette**.
+This repository is the recovery baseline for the **Kasikili Game Centre** and its
+first hosted game, **Kasikili Bergmann Roulette**.
 
 It combines:
 
@@ -10,7 +11,9 @@ It combines:
 
 ## Current status
 
-The latest APK has been positively identified and recovered, but this commit is not yet a verified replacement APK.
+The latest APK has been positively identified and recovered. A signed offline
+test APK now preserves the original roulette while adding the Game Centre
+reception and platform-level navigation.
 
 - Latest Drive artifact: `Kasikili V2.0.1`
 - APK manifest version: `2.0.0` (`versionCode` 1)
@@ -38,6 +41,8 @@ The reconstructed APK source does contain the owner's identifying features:
 - `docs/` — original project documents.
 - `Recovery/LatestApkSource/` — ILSpy reconstruction of the latest APK's `Assembly-CSharp.dll` and `Scripts.dll`.
 - `Recovery/Kasikili-recovery-report.md` — detailed APK, signing, backend, and restoration findings.
+- `Recovery/GameCenterRuntime/` — standalone reception runtime used by the recovered APK.
+- `docs/GAME_CENTRE_ARCHITECTURE.md` — reception, catalog, wallet-transfer, cash-out and referral boundaries.
 - `expo-preview/` — Expo SDK 54 preview rebuilt with the latest APK's recovered login, game, menu, leaderboard, and account artwork.
 
 ## Important separation
@@ -65,10 +70,10 @@ The historical signing certificate was recovered from the APK, but its private k
 ## Next restoration checkpoint
 
 1. Continue diffing the recovered latest-APK scene/prefabs against `Assets/Scenes/Game.unity`.
-2. Use `expo-preview/` to validate the recovered portrait UI and interaction flow in Expo Go.
-3. Merge the reconstructed 2.0 scripts into `Assets/` while preserving matching `.meta` GUIDs.
-4. Stub or disable backend calls and compile in Unity 2020.3.5f1.
-5. Repair missing serialized references and packages.
-6. Produce a newly signed test APK and document its SHA-256.
+2. Validate the Game Centre reception and drawer on a physical Android device.
+3. Replace the local game catalog and wallet fixtures with authenticated APIs.
+4. Merge the reconstructed 2.0 scripts into `Assets/` while preserving matching `.meta` GUIDs.
+5. Repair missing serialized references and packages in Unity 2020.3.5f1.
+6. Rebuild with a current Android target after the recovered baseline remains stable.
 
 See [Recovery/Kasikili-recovery-report.md](Recovery/Kasikili-recovery-report.md) for the full findings.

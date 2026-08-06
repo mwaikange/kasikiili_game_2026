@@ -2,9 +2,9 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.IO.Compression;
 
-if (args.Length == 4 && args[0] == "--inject-apk")
+if ((args.Length == 4 || args.Length == 5) && args[0] == "--inject-apk")
 {
-    InjectApk(args[1], args[2], args[3]);
+    InjectApk(args[1], args[2], args[3], args.Length == 5 ? args[4] : null);
     return 0;
 }
 
@@ -40,6 +40,7 @@ PatchRouletteStartupActive(module);
 PatchOfflineConnection(module);
 PatchOfflineLogin(module);
 PatchLoginButton(module);
+PatchGameMenuToReception(module);
 PatchLogoutButton(module);
 PatchGuardedTableInput(module);
 PatchImmediateCancel(module);
@@ -291,6 +292,8 @@ static void PatchLoginButton(ModuleDefinition module)
         .First(m => m.DeclaringType.FullName == "UnityEngine.SceneManagement.SceneManager"
             && m.Name == "LoadScene" && m.Parameters.Count == 1);
     var managerField = type.Fields.Single(f => f.Name == "gameManager");
+    var markReceptionPending = GameCenterMethod(module, "MarkReceptionPending");
+    var showReception = GameCenterMethod(module, "ShowReception");
     var il = method.Body.GetILProcessor();
     ResetBody(method);
 
@@ -307,14 +310,40 @@ static void PatchLoginButton(ModuleDefinition module)
     il.Append(il.Create(OpCodes.Ldstr, "{\"user_id\":1,\"accesstoken\":\"offline\",\"referral_link\":\"offline\",\"mobile_number\":\"0810000000\",\"region\":\"KHOMAS\"}"));
     il.Append(il.Create(OpCodes.Call, parse));
     il.Append(il.Create(OpCodes.Stfld, gameManager.Fields.Single(f => f.Name == "UserData")));
+    il.Append(il.Create(OpCodes.Call, markReceptionPending));
     il.Append(il.Create(OpCodes.Ldarg_0));
     il.Append(il.Create(OpCodes.Ldfld, managerField));
     il.Append(il.Create(OpCodes.Ldc_I4_3));
     il.Append(il.Create(OpCodes.Callvirt, getGameScene));
     il.Append(il.Create(OpCodes.Ldfld, gameScene.Fields.Single(f => f.Name == "index")));
     il.Append(il.Create(OpCodes.Call, loadScene));
+    il.Append(il.Create(OpCodes.Call, showReception));
     il.Append(il.Create(OpCodes.Ret));
-    Console.WriteLine("Patched SIGN IN button to load the Unity Game scene directly.");
+    Console.WriteLine("Patched SIGN IN to open the Game Centre reception over the Unity Game scene.");
+}
+
+static void PatchGameMenuToReception(ModuleDefinition module)
+{
+    var type = FindType(module, "Components.OpenMenuInput");
+    var method = type.Methods.Single(m => m.Name == "OnClick");
+    var il = method.Body.GetILProcessor();
+    ResetBody(method);
+    il.Append(il.Create(OpCodes.Call, GameCenterMethod(module, "ShowReception")));
+    il.Append(il.Create(OpCodes.Ret));
+    Console.WriteLine("Patched the roulette menu button to return to the Game Centre reception.");
+}
+
+static MethodReference GameCenterMethod(ModuleDefinition module, string methodName)
+{
+    var assembly = module.AssemblyReferences.FirstOrDefault(a => a.Name == "Kasikili.GameCenter");
+    if (assembly == null)
+    {
+        assembly = new AssemblyNameReference("Kasikili.GameCenter", new Version(1, 0, 0, 0));
+        module.AssemblyReferences.Add(assembly);
+    }
+
+    var type = new TypeReference("Kasikili.GameCenter", "GameCenterBridge", module, assembly);
+    return new MethodReference(methodName, module.TypeSystem.Void, type) { HasThis = false };
 }
 
 static void PatchLogoutButton(ModuleDefinition module)
@@ -769,11 +798,12 @@ static void PatchStringIterator(ModuleDefinition module, string typeName, string
     Console.WriteLine($"Patched offline response for {typeName}.");
 }
 
-static void InjectApk(string inputApk, string outputApk, string scriptsDll)
+static void InjectApk(string inputApk, string outputApk, string scriptsDll, string? gameCenterDll)
 {
     inputApk = Path.GetFullPath(inputApk);
     outputApk = Path.GetFullPath(outputApk);
     scriptsDll = Path.GetFullPath(scriptsDll);
+    gameCenterDll = string.IsNullOrWhiteSpace(gameCenterDll) ? null : Path.GetFullPath(gameCenterDll);
     Directory.CreateDirectory(Path.GetDirectoryName(outputApk)!);
     File.Copy(inputApk, outputApk, overwrite: true);
 
@@ -791,10 +821,20 @@ static void InjectApk(string inputApk, string outputApk, string scriptsDll)
         signature.Delete();
     }
 
-    var entry = archive.CreateEntry(managedPath, CompressionLevel.Optimal);
+    AddManagedAssembly(archive, managedPath, scriptsDll);
+    if (gameCenterDll != null)
+        AddManagedAssembly(archive, "assets/bin/Data/Managed/Kasikili.GameCenter.dll", gameCenterDll);
+    Console.WriteLine($"Injected patched Scripts.dll into {outputApk}");
+    if (gameCenterDll != null)
+        Console.WriteLine($"Injected Game Centre runtime into {outputApk}");
+}
+
+static void AddManagedAssembly(ZipArchive archive, string entryPath, string assemblyPath)
+{
+    archive.GetEntry(entryPath)?.Delete();
+    var entry = archive.CreateEntry(entryPath, CompressionLevel.Optimal);
     entry.LastWriteTime = DateTimeOffset.UtcNow;
     using var destination = entry.Open();
-    using var source = File.OpenRead(scriptsDll);
+    using var source = File.OpenRead(assemblyPath);
     source.CopyTo(destination);
-    Console.WriteLine($"Injected patched Scripts.dll into {outputApk}");
 }

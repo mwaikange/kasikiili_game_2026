@@ -16,6 +16,7 @@
 .vscode/
 *.csproj
 !Recovery/OfflineApkPatcher/OfflineApkPatcher.csproj
+!Recovery/GameCenterRuntime/Kasikili.GameCenter.csproj
 *.sln
 *.suo
 *.user
