@@ -35,8 +35,11 @@ left. It intentionally does not cover the full screen. Its destinations are:
 4. Leaderboard
 5. Rewards
 6. Settings
+7. Log out
 
 These are platform-level features and must not be owned by the roulette game.
+Log out clears the pending reception state and returns directly to the existing
+login screen.
 
 ## Wallet rules
 
